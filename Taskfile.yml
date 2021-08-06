@@ -1,0 +1,42 @@
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+  BINARY: bin/banner_rotation
+
+tasks:
+  default:
+    - task: build
+
+  build:
+    desc: Build the go binary
+    cmds:
+      - go build -v -o bin/banner_rotation .
+
+  run:
+    desc: Run the banner_rotation service with default config(from configs directory)
+    deps: [ build ]
+    cmds:
+      - ./{{.BINARY}} --config=./configs/config.yaml
+
+  clean:
+    desc: Clean binary directory
+    cmds:
+      - rm -rf bin
+
+  lint:
+    desc: Lint project
+    deps: [ install-lint-deps ]
+    cmds:
+      - golangci-lint run ./...
+
+  install-lint-deps:
+    desc: Intall lint dependencies
+    cmds:
+      - (which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.37.0
+
+
+  test:
+    desc: Run test with race detector
+    cmds:
+      - go test -race -count 100 ./...

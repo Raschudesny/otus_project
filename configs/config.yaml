@@ -1,0 +1,4 @@
+logger:
+  level: info
+  file: ./output_logs.log
+{"level":"info","ts":"2021-08-06T21:05:40.281+0300","caller":"otus_project/main.go:31","msg":"Banner rotation service successfully started"}
