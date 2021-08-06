@@ -24,6 +24,12 @@ jobs:
 
       - name: Check out code
         uses: actions/checkout@v2
+        
+      - name: Linters
+        uses: golangci/golangci-lint-action@v2
+        with:
+          version: v1.37
+          working-directory: ${{ env.BRANCH }}
 
       - name: Task lint
         run: task lint
