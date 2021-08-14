@@ -1,7 +1,6 @@
 version: '3'
 
 vars:
-  GREETING: Hello, World!
   BINARY: bin/banner_rotation
 
 tasks:
@@ -35,8 +34,22 @@ tasks:
     cmds:
       - (which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.1
 
-
   test:
     desc: Run test with race detector
     cmds:
       - go test -race -count 100 ./...
+
+  generate:
+    desc: Generate all requried for project build codegenerated sources
+    cmds:
+      - go generate -x ./...
+
+  migrate_up:
+    desc: Apply all migrations from migrations dir
+    cmds:
+      - goose -dir migrations postgres "user=danny password=danny dbname=rotation sslmode=disable" up
+
+  migrate_down:
+    desc: Rollback all migrations from migrations dir
+    cmds:
+      - goose -dir migrations postgres "user=danny password=danny dbname=rotation sslmode=disable" down

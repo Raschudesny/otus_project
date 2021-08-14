@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
 )
 
