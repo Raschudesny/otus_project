@@ -8,11 +8,9 @@ import (
 	"time"
 
 	"github.com/Raschudesny/otus_project/v1/internal"
-
 	"github.com/Raschudesny/otus_project/v1/storage"
-	"go.uber.org/zap"
-
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 var _ internal.Repository = (*Storage)(nil)
@@ -72,7 +70,7 @@ func (s *Storage) AddSlot(ctx context.Context, description string) (string, erro
 	return id, nil
 }
 
-func (s *Storage) GetSlotById(ctx context.Context, id string) (storage.Slot, error) {
+func (s *Storage) GetSlotByID(ctx context.Context, id string) (storage.Slot, error) {
 	query := "SELECT (slot_id, slot_description) FROM slots WHERE slot_id = ?"
 	row := s.db.QueryRowxContext(ctx, query, id)
 	if err := row.Err(); err != nil {
@@ -131,7 +129,7 @@ func (s *Storage) AddBanner(ctx context.Context, description string) (string, er
 	return id, nil
 }
 
-func (s *Storage) GetBannerById(ctx context.Context, id string) (storage.Banner, error) {
+func (s *Storage) GetBannerByID(ctx context.Context, id string) (storage.Banner, error) {
 	query := "SELECT (banner_id, banner_description) FROM banners WHERE banner_id = ?"
 	row := s.db.QueryRowxContext(ctx, query, id)
 	if err := row.Err(); err != nil {
@@ -167,10 +165,18 @@ func (s *Storage) FindBannersBySlot(ctx context.Context, slotID, groupID string)
 		}
 	}()
 
-	var
+	var banners []storage.Banner
+	var banner storage.Banner
 	for rows.Next() {
-		rows.StructScan()
+		if err := rows.StructScan(&banner); err != nil {
+			return nil, fmt.Errorf("sql FindBannersBySlot result parsing error: %w", err)
+		}
+		banners = append(banners, banner)
 	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("sql FindBannersBySlot result parsing error %w", err)
+	}
+	return banners, nil
 }
 
 func (s *Storage) DeleteBanner(ctx context.Context, id string) error {
@@ -189,11 +195,11 @@ func (s *Storage) DeleteBanner(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Storage) AddBannerToSlot(ctx context.Context, bannerId, slotId string) error {
+func (s *Storage) AddBannerToSlot(ctx context.Context, bannerID, slotID string) error {
 	query := "INSERT INTO slot_banners (slot_id, banner_id) VALUES (:slotId, :bannerId)"
 	_, err := s.db.NamedExecContext(ctx, query, map[string]interface{}{
-		"slotId":   slotId,
-		"bannerId": bannerId,
+		"slotId":   slotID,
+		"bannerId": bannerID,
 	})
 	if err != nil {
 		return fmt.Errorf("error during sql execution: %w", err)
@@ -201,11 +207,11 @@ func (s *Storage) AddBannerToSlot(ctx context.Context, bannerId, slotId string) 
 	return nil
 }
 
-func (s *Storage) DeleteBannerFromSlot(ctx context.Context, bannerId, slotId string) error {
+func (s *Storage) DeleteBannerFromSlot(ctx context.Context, bannerID, slotID string) error {
 	query := "DELETE FROM slot_banners WHERE slot_id = :slotId AND banner_id = :bannerId"
 	res, err := s.db.NamedExecContext(ctx, query, map[string]interface{}{
-		"bannerId": bannerId,
-		"slotId":   slotId,
+		"bannerId": bannerID,
+		"slotId":   slotID,
 	})
 	if err != nil {
 		return fmt.Errorf("sql delete slot delete operation query error: %w", err)
@@ -276,12 +282,13 @@ func (s *Storage) Transact(ctx context.Context, work func(*sqlx.Tx) error) error
 	return txx.Commit()
 }
 
-func (s *Storage) InitStatForBanner(ctx context.Context, slotId, groupId, bannerId string) error {
-	query := "INSERT INTO banner_stats (slot_id, banner_id, group_id, clicks_amount, shows_amount) VALUES (:slotId, :bannerId, :groupId, 0, 0)"
+func (s *Storage) InitStatForBanner(ctx context.Context, slotID, groupID, bannerID string) error {
+	query := `INSERT INTO banner_stats (slot_id, banner_id, group_id, clicks_amount, shows_amount)
+ 			  VALUES (:slotId, :bannerId, :groupId, 0, 0)`
 	_, err := s.db.NamedExecContext(ctx, query, map[string]interface{}{
-		"slotId":   slotId,
-		"bannerId": bannerId,
-		"groupId":  groupId,
+		"slotId":   slotID,
+		"bannerId": bannerID,
+		"groupId":  groupID,
 	})
 	if err != nil {
 		return fmt.Errorf("error during sql execution: %w", err)
@@ -290,7 +297,9 @@ func (s *Storage) InitStatForBanner(ctx context.Context, slotId, groupId, banner
 }
 
 func (s *Storage) PersistClick(ctx context.Context, slotID, groupID, bannerID string) error {
-	query := "UPDATE banner_stats SET clicks_amount = clicks_amount + 1 WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId"
+	query := `UPDATE banner_stats
+			  SET clicks_amount = clicks_amount + 1
+			  WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId`
 	res, err := s.db.NamedExecContext(ctx, query, map[string]interface{}{
 		"bannerId": bannerID,
 		"slotId":   slotID,
@@ -310,7 +319,9 @@ func (s *Storage) PersistClick(ctx context.Context, slotID, groupID, bannerID st
 }
 
 func (s *Storage) PersistShow(ctx context.Context, slotID, groupID, bannerID string) error {
-	query := "UPDATE banner_stats SET shows_amount = shows_amount + 1 WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId"
+	query := `UPDATE banner_stats 
+			  SET shows_amount = shows_amount + 1 
+			  WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId`
 	res, err := s.db.NamedExecContext(ctx, query, map[string]interface{}{
 		"bannerId": bannerID,
 		"slotId":   slotID,
@@ -330,7 +341,9 @@ func (s *Storage) PersistShow(ctx context.Context, slotID, groupID, bannerID str
 }
 
 func (s *Storage) GetShowsAmount(ctx context.Context, slotID, groupID, bannerID string) (int, error) {
-	query := "SELECT shows_amount FROM banner_stats WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId"
+	query := `SELECT shows_amount 
+			  FROM banner_stats
+			  WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId`
 	rows, err := s.db.NamedQueryContext(ctx, query, map[string]interface{}{
 		"slotId":   slotID,
 		"groupId":  groupID,
@@ -357,7 +370,9 @@ func (s *Storage) GetShowsAmount(ctx context.Context, slotID, groupID, bannerID 
 }
 
 func (s *Storage) GetClicksAmount(ctx context.Context, slotID, groupID, bannerID string) (int, error) {
-	query := "SELECT clicks_amount FROM banner_stats WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId"
+	query := `SELECT clicks_amount
+		      FROM banner_stats
+ 			  WHERE slot_id = :slotId AND group_id = :groupId AND banner_id = :bannerId`
 	rows, err := s.db.NamedQueryContext(ctx, query, map[string]interface{}{
 		"slotId":   slotID,
 		"groupId":  groupID,
@@ -383,6 +398,7 @@ func (s *Storage) GetClicksAmount(ctx context.Context, slotID, groupID, bannerID
 	return clicksAmount, nil
 }
 
+// TODO rewrite on db.QueryRow() function.
 func (s *Storage) CountTotalShowsAmount(ctx context.Context, slotID, groupID string) (uint, error) {
 	query := "SELECT SUM(shows_amount) FROM banner_stats WHERE slot_id = :slotId AND group_id = :groupId"
 	rows, err := s.db.NamedQueryContext(ctx, query, map[string]interface{}{
@@ -390,16 +406,16 @@ func (s *Storage) CountTotalShowsAmount(ctx context.Context, slotID, groupID str
 		"groupId": groupID,
 	})
 	if err != nil {
-		return -1, fmt.Errorf("error during sql execution: %w", err)
+		return 0, fmt.Errorf("error during sql execution: %w", err)
 	}
 	var totalShows uint
 	for rows.Next() {
 		if err := rows.Scan(&totalShows); err != nil {
-			return -1, fmt.Errorf("sql CountTotalShowsAmount result parsing error: %w", err)
+			return 0, fmt.Errorf("sql CountTotalShowsAmount result parsing error: %w", err)
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return -1, fmt.Errorf("sql CountTotalShowsAmount result parsing error: %w", err)
+		return 0, fmt.Errorf("sql CountTotalShowsAmount result parsing error: %w", err)
 	}
 	return totalShows, nil
 }

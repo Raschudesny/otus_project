@@ -7,18 +7,27 @@ import (
 	"math/big"
 
 	"github.com/Raschudesny/otus_project/v1/server"
-
 	"github.com/Raschudesny/otus_project/v1/storage"
 )
 
 type Repository interface {
 	AddSlot(ctx context.Context, description string) (string, error)
-	GetSlotById(ctx context.Context, id string) (storage.Slot, error)
+	GetSlotByID(ctx context.Context, id string) (storage.Slot, error)
 	DeleteSlot(ctx context.Context, id string) error
-	GetAllBanners() []storage.Banner
-	GetBannerShows(banner storage.Banner) (int, error)
-	GetBannerClicks(banner storage.Banner) (int, error)
-	CountTotalShowsAmount(slotID, groupId string) (int64, error)
+	AddBanner(ctx context.Context, description string) (string, error)
+	GetBannerByID(ctx context.Context, id string) (storage.Banner, error)
+	FindBannersBySlot(ctx context.Context, slotID, groupID string) ([]storage.Banner, error)
+	DeleteBanner(ctx context.Context, id string) error
+	AddBannerToSlot(ctx context.Context, bannerID, slotID string) error
+	DeleteBannerFromSlot(ctx context.Context, bannerID, slotID string) error
+	AddGroup(ctx context.Context, description string) (string, error)
+	DeleteGroup(ctx context.Context, id string) error
+	InitStatForBanner(ctx context.Context, slotID, groupID, bannerID string) error
+	PersistClick(ctx context.Context, slotID, groupID, bannerID string) error
+	PersistShow(ctx context.Context, slotID, groupID, bannerID string) error
+	GetShowsAmount(ctx context.Context, slotID, groupID, bannerID string) (int, error)
+	GetClicksAmount(ctx context.Context, slotID, groupID, bannerID string) (int, error)
+	CountTotalShowsAmount(ctx context.Context, slotID, groupID string) (uint, error)
 }
 
 var _ server.Application = (*RotationService)(nil)
@@ -35,11 +44,11 @@ func (r RotationService) AddSlot(ctx context.Context, description string) (stora
 	if description == "" {
 		return storage.Slot{}, fmt.Errorf("description param is empty")
 	}
-	slotId, err := r.repo.AddSlot(ctx, description)
+	slotID, err := r.repo.AddSlot(ctx, description)
 	if err != nil {
 		return storage.Slot{}, fmt.Errorf("error during slot creation: %w", err)
 	}
-	slot, err := r.repo.GetSlotById(ctx, slotId)
+	slot, err := r.repo.GetSlotByID(ctx, slotID)
 	if err != nil {
 		return storage.Slot{}, fmt.Errorf("error during getting slot by id: %w", err)
 	}
@@ -63,7 +72,7 @@ func (r RotationService) AddBannerToSlot(ctx context.Context, bannerID, slotID s
 	if slotID == "" {
 		return fmt.Errorf("slotID param is empty")
 	}
-	r.repo.AddBannerToSlot()
+	panic("implement me")
 }
 
 func (r RotationService) DeleteBannerFromSlot(ctx context.Context, bannerID, slotID string) error {
@@ -91,9 +100,13 @@ func (r RotationService) PersistClick(ctx context.Context, slotID, groupID, bann
 }
 
 func (r RotationService) NextBanner(ctx context.Context, slotID, groupID string) storage.Banner {
-	allBanners := r.repo.GetAllBanners()
+	allBanners, err := r.repo.FindBannersBySlot(ctx, slotID, groupID)
+	if err != nil {
+		panic("world collides")
+	}
+
 	for _, banner := range allBanners {
-		shows, err := r.repo.GetBannerShows(banner)
+		shows, err := r.repo.GetShowsAmount(ctx, slotID, groupID, banner.Id)
 		if err != nil {
 			panic("world collides")
 		}
@@ -101,18 +114,19 @@ func (r RotationService) NextBanner(ctx context.Context, slotID, groupID string)
 			return banner
 		}
 	}
+
 	maxTargetValue := 0.0
 	maxBannerIndex := 0
 	for index, banner := range allBanners {
-		bannerClicks, err := r.repo.GetBannerClicks(banner)
+		bannerClicks, err := r.repo.GetClicksAmount(ctx, slotID, groupID, banner.Id)
 		if err != nil {
 			panic("world collide")
 		}
-		bannerShows, err := r.repo.GetBannerShows(banner)
+		bannerShows, err := r.repo.GetShowsAmount(ctx, slotID, groupID, banner.Id)
 		if err != nil {
 			panic("world collide")
 		}
-		totalBannerShows, err := r.repo.CountTotalShowsAmount(slotID, groupID)
+		totalBannerShows, err := r.repo.CountTotalShowsAmount(ctx, slotID, groupID)
 		if err != nil {
 			panic("world collide")
 		}
@@ -126,7 +140,7 @@ func (r RotationService) NextBanner(ctx context.Context, slotID, groupID string)
 }
 
 // targetFunction is a maximizing on each step in UCB1 algo function value
-// it should be used to evaluate value for each banner
+// it should be used to evaluate value for each banner.
 func targetFunction(clickCount, showCount, totalShowCount float64) float64 {
 	avgBannerIncome := clickCount / showCount
 	return avgBannerIncome + math.Sqrt((2.0*math.Log(totalShowCount))/showCount)
