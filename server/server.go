@@ -38,12 +38,12 @@ func (r *RotationService) AddSlot(ctx context.Context, req *pb.AddSlotRequest) (
 }
 
 func (r *RotationService) DeleteSlot(ctx context.Context, req *pb.DeleteSlotRequest) (*pb.DeleteSlotResponse, error) {
-	slotId := strings.TrimSpace(req.GetSlotId())
-	if slotId == "" {
+	slotID := strings.TrimSpace(req.GetSlotId())
+	if slotID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "slot id argument must be not empty")
 	}
 
-	err := r.app.DeleteSlot(ctx, slotId)
+	err := r.app.DeleteSlot(ctx, slotID)
 	switch {
 	case errors.Is(err, storage.ErrSlotNotFound):
 		return nil, status.Errorf(codes.NotFound, "slot with provided id not found")
@@ -56,15 +56,15 @@ func (r *RotationService) DeleteSlot(ctx context.Context, req *pb.DeleteSlotRequ
 
 //nolint:lll
 func (r *RotationService) AddBannerToSlot(ctx context.Context, req *pb.AddBannerToSlotRequest) (*pb.AddBannerToSlotResponse, error) {
-	slotId := strings.TrimSpace(req.GetSlotId())
-	bannerId := strings.TrimSpace(req.GetBannerId())
-	if slotId == "" {
+	slotID := strings.TrimSpace(req.GetSlotId())
+	bannerID := strings.TrimSpace(req.GetBannerId())
+	if slotID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "slot id is empty")
 	}
-	if bannerId == "" {
+	if bannerID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "banner id is empty")
 	}
-	if err := r.app.AddBannerToSlot(ctx, slotId, bannerId); err != nil {
+	if err := r.app.AddBannerToSlot(ctx, slotID, bannerID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to add banner to slot: %s", err.Error())
 	}
 	return &pb.AddBannerToSlotResponse{}, nil
@@ -72,13 +72,15 @@ func (r *RotationService) AddBannerToSlot(ctx context.Context, req *pb.AddBanner
 
 //nolint:lll
 func (r *RotationService) DeleteBannerFromSlot(ctx context.Context, req *pb.DeleteBannerFromSlotRequest) (*pb.DeleteBannerFromSlotResponse, error) {
-	if req.GetSlotId() == "" {
+	slotID := strings.TrimSpace(req.GetSlotId())
+	bannerID := strings.TrimSpace(req.GetBannerId())
+	if slotID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "slot id is empty")
 	}
-	if req.GetBannerId() == "" {
+	if bannerID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "banner id is empty")
 	}
-	if err := r.app.DeleteBannerFromSlot(ctx, req.GetSlotId(), req.GetBannerId()); err != nil {
+	if err := r.app.DeleteBannerFromSlot(ctx, slotID, bannerID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete banner from slot: %s", err.Error())
 	}
 	return &pb.DeleteBannerFromSlotResponse{}, nil
@@ -98,11 +100,11 @@ func (r *RotationService) AddBanner(ctx context.Context, req *pb.AddBannerReques
 
 //nolint:lll
 func (r *RotationService) DeleteBanner(ctx context.Context, req *pb.DeleteBannerRequest) (*pb.DeleteBannerResponse, error) {
-	bannerId := strings.TrimSpace(req.GetBannerId())
-	if bannerId == "" {
+	bannerID := strings.TrimSpace(req.GetBannerId())
+	if bannerID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "banner id is empty")
 	}
-	if err := r.app.DeleteBanner(ctx, bannerId); err != nil {
+	if err := r.app.DeleteBanner(ctx, bannerID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete banner: %s", err.Error())
 	}
 	return &pb.DeleteBannerResponse{}, nil
@@ -122,11 +124,11 @@ func (r *RotationService) AddGroup(ctx context.Context, req *pb.AddGroupRequest)
 
 //nolint:lll
 func (r *RotationService) DeleteGroup(ctx context.Context, req *pb.DeleteGroupRequest) (*pb.DeleteGroupResponse, error) {
-	groupId := strings.TrimSpace(req.GetGroupId())
-	if groupId == "" {
+	groupID := strings.TrimSpace(req.GetGroupId())
+	if groupID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "group id is empty")
 	}
-	if err := r.app.DeleteGroup(ctx, groupId); err != nil {
+	if err := r.app.DeleteGroup(ctx, groupID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to delete group: %s", err.Error())
 	}
 	return &pb.DeleteGroupResponse{}, nil
@@ -134,34 +136,34 @@ func (r *RotationService) DeleteGroup(ctx context.Context, req *pb.DeleteGroupRe
 
 //nolint:lll
 func (r *RotationService) PersistClick(ctx context.Context, req *pb.PersistClickRequest) (*pb.PersistClickResponse, error) {
-	slotId := strings.TrimSpace(req.GetSlotId())
-	groupId := strings.TrimSpace(req.GetGroupId())
-	bannerId := strings.TrimSpace(req.GetBannerId())
-	if slotId == "" {
+	slotID := strings.TrimSpace(req.GetSlotId())
+	groupID := strings.TrimSpace(req.GetGroupId())
+	bannerID := strings.TrimSpace(req.GetBannerId())
+	if slotID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "slot id is empty")
 	}
-	if groupId == "" {
+	if groupID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "group id is empty")
 	}
-	if bannerId == "" {
+	if bannerID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "banner id is empty")
 	}
-	if err := r.app.PersistClick(ctx, slotId, groupId, bannerId); err != nil {
+	if err := r.app.PersistClick(ctx, slotID, groupID, bannerID); err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to persist click: %s", err.Error())
 	}
 	return &pb.PersistClickResponse{}, nil
 }
 
 func (r *RotationService) NextBanner(ctx context.Context, req *pb.NextBannerRequest) (*pb.NextBannerResponse, error) {
-	slotId := strings.TrimSpace(req.GetSlotId())
-	groupId := strings.TrimSpace(req.GetGroupId())
-	if slotId == "" {
+	slotID := strings.TrimSpace(req.GetSlotId())
+	groupID := strings.TrimSpace(req.GetGroupId())
+	if slotID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "slot id is empty")
 	}
-	if groupId == "" {
+	if groupID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "group id is empty")
 	}
-	nextBannerID, err := r.app.NextBannerID(ctx, slotId, groupId)
+	nextBannerID, err := r.app.NextBannerID(ctx, slotID, groupID)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get next banner to show: %s", err.Error())
 	}
