@@ -48,7 +48,7 @@ message AddBannerResponse {
 }
 
 message DeleteBannerRequest {
-    string description = 1;
+    string banner_id = 1;
 }
 
 message DeleteBannerResponse {
@@ -79,7 +79,7 @@ message AddGroupResponse {
 }
 
 message DeleteGroupRequest {
-    string id = 1;
+    string group_id = 1;
 }
 
 message DeleteGroupResponse {
@@ -87,8 +87,8 @@ message DeleteGroupResponse {
 
 message PersistClickRequest {
     string slot_id = 1;
-    string banner_id = 2;
-    string group_id = 3;
+    string group_id = 2;
+    string banner_id = 3;
 }
 
 message PersistClickResponse {

@@ -47,9 +47,14 @@ tasks:
   migrate_up:
     desc: Apply all migrations from migrations dir
     cmds:
-      - goose -dir migrations postgres "user=danny password=danny dbname=rotation sslmode=disable" up
+      - goose -dir migrations postgres "host=localhost user=danny password=danny dbname=rotation sslmode=disable" up
 
   migrate_down:
     desc: Rollback all migrations from migrations dir
     cmds:
-      - goose -dir migrations postgres "user=danny password=danny dbname=rotation sslmode=disable" down
+      - goose -dir migrations postgres "host=localhost user=danny password=danny dbname=rotation sslmode=disable" down
+
+  evans:
+    desc: Start evans grpc evans (https://github.com/ktr0731/evans) client
+    cmds:
+      - evans api/*.proto --port=56789

@@ -7,21 +7,21 @@ import (
 
 func MapBannerToPb(banner storage.Banner) *pb.Banner {
 	return &pb.Banner{
-		Id:          banner.Id,
+		Id:          banner.ID,
 		Description: banner.Description,
 	}
 }
 
 func MapSlotToPb(slot storage.Slot) *pb.Slot {
 	return &pb.Slot{
-		Id:          slot.Id,
+		Id:          slot.ID,
 		Description: slot.Description,
 	}
 }
 
-/*func MapPbBannerToStorage(banner *pb.Banner) storage.Banner {
-	return storage.Banner{
-		Id:          banner.GetId(),
-		Description: banner.GetDescription(),
+func MapGroupToPb(group storage.SocialGroup) *pb.Group {
+	return &pb.Group{
+		Id:          group.ID,
+		Description: group.Description,
 	}
-}*/
+}

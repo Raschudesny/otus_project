@@ -16,18 +16,16 @@ type Repository interface {
 	DeleteSlot(ctx context.Context, id string) error
 	AddBanner(ctx context.Context, description string) (string, error)
 	GetBannerByID(ctx context.Context, id string) (storage.Banner, error)
-	FindBannersBySlot(ctx context.Context, slotID, groupID string) ([]storage.Banner, error)
 	DeleteBanner(ctx context.Context, id string) error
-	AddBannerToSlot(ctx context.Context, bannerID, slotID string) error
-	DeleteBannerFromSlot(ctx context.Context, bannerID, slotID string) error
+	AddBannerToSlot(ctx context.Context, slotID, bannerID string) error
+	DeleteBannerFromSlot(ctx context.Context, slotID, bannerID string) error
 	AddGroup(ctx context.Context, description string) (string, error)
+	GetGroupByID(ctx context.Context, groupID string) (storage.SocialGroup, error)
 	DeleteGroup(ctx context.Context, id string) error
-	InitStatForBanner(ctx context.Context, slotID, groupID, bannerID string) error
 	PersistClick(ctx context.Context, slotID, groupID, bannerID string) error
 	PersistShow(ctx context.Context, slotID, groupID, bannerID string) error
-	GetShowsAmount(ctx context.Context, slotID, groupID, bannerID string) (int, error)
-	GetClicksAmount(ctx context.Context, slotID, groupID, bannerID string) (int, error)
-	CountTotalShowsAmount(ctx context.Context, slotID, groupID string) (uint, error)
+	CountTotalShowsAmount(ctx context.Context, slotID, groupID string) (int64, error)
+	FindSlotBannerStats(ctx context.Context, slotID, groupID string) ([]storage.SlotBannerStat, error)
 }
 
 var _ server.Application = (*RotationService)(nil)
@@ -65,78 +63,146 @@ func (r RotationService) DeleteSlot(ctx context.Context, slotID string) error {
 	return nil
 }
 
-func (r RotationService) AddBannerToSlot(ctx context.Context, bannerID, slotID string) error {
+func (r RotationService) AddBannerToSlot(ctx context.Context, slotID, bannerID string) error {
 	if bannerID == "" {
 		return fmt.Errorf("bannerID param is empty")
 	}
 	if slotID == "" {
 		return fmt.Errorf("slotID param is empty")
 	}
-	panic("implement me")
+	err := r.repo.AddBannerToSlot(ctx, slotID, bannerID)
+	if err != nil {
+		return fmt.Errorf("error during adding banner to slot: %w", err)
+	}
+	return nil
 }
 
 func (r RotationService) DeleteBannerFromSlot(ctx context.Context, bannerID, slotID string) error {
-	panic("implement me")
+	if bannerID == "" {
+		return fmt.Errorf("bannerID param is empty")
+	}
+	if slotID == "" {
+		return fmt.Errorf("slotID param is empty")
+	}
+	if err := r.repo.DeleteBannerFromSlot(ctx, bannerID, slotID); err != nil {
+		return fmt.Errorf("errod during deleting banner from slot: %w", err)
+	}
+	return nil
 }
 
 func (r RotationService) AddBanner(ctx context.Context, description string) (storage.Banner, error) {
-	panic("implement me")
+	if description == "" {
+		return storage.Banner{}, fmt.Errorf("description param is empty")
+	}
+	bannerID, err := r.repo.AddBanner(ctx, description)
+	if err != nil {
+		return storage.Banner{}, fmt.Errorf("error during creating banner: %w", err)
+	}
+	banner, err := r.repo.GetBannerByID(ctx, bannerID)
+	if err != nil {
+		return storage.Banner{}, fmt.Errorf("error during retrieving created banner: %w", err)
+	}
+	return banner, nil
 }
 
-func (r RotationService) DeleteBanner(ctx context.Context, bannerID string) {
-	panic("implement me")
+func (r RotationService) DeleteBanner(ctx context.Context, bannerID string) error {
+	if bannerID == "" {
+		return fmt.Errorf("bannerID param is empty")
+	}
+	if err := r.repo.DeleteBanner(ctx, bannerID); err != nil {
+		return fmt.Errorf("error during deleting banner")
+	}
+	return nil
 }
 
 func (r RotationService) AddGroup(ctx context.Context, description string) (storage.SocialGroup, error) {
-	panic("implement me")
+	if description == "" {
+		return storage.SocialGroup{}, fmt.Errorf("description is empty")
+	}
+	groupID, err := r.repo.AddGroup(ctx, description)
+	if err != nil {
+		return storage.SocialGroup{}, fmt.Errorf("error during adding group: %w", err)
+	}
+	group, err := r.repo.GetGroupByID(ctx, groupID)
+	if err != nil {
+		return storage.SocialGroup{}, fmt.Errorf("error during retrieving froup by id: %w", err)
+	}
+	return group, nil
 }
 
 func (r RotationService) DeleteGroup(ctx context.Context, groupID string) error {
-	panic("implement me")
+	if groupID == "" {
+		return fmt.Errorf("gorupID param is empty")
+	}
+	if err := r.repo.DeleteGroup(ctx, groupID); err != nil {
+		return fmt.Errorf("error during deleting group by id: %w", err)
+	}
+	return nil
 }
 
 func (r RotationService) PersistClick(ctx context.Context, slotID, groupID, bannerID string) error {
-	panic("implement me")
-}
-
-func (r RotationService) NextBanner(ctx context.Context, slotID, groupID string) storage.Banner {
-	allBanners, err := r.repo.FindBannersBySlot(ctx, slotID, groupID)
-	if err != nil {
-		panic("world collides")
+	if slotID == "" {
+		return fmt.Errorf("slotId param is empty")
+	}
+	if groupID == "" {
+		return fmt.Errorf("groupId param is empty")
+	}
+	if bannerID == "" {
+		return fmt.Errorf("bannerId param is empty")
 	}
 
-	for _, banner := range allBanners {
-		shows, err := r.repo.GetShowsAmount(ctx, slotID, groupID, banner.Id)
-		if err != nil {
-			panic("world collides")
+	if err := r.repo.PersistClick(ctx, slotID, groupID, bannerID); err != nil {
+		return fmt.Errorf("failed to persist banner click stats: %w", err)
+	}
+	return nil
+}
+
+// NextBannerID function returns id of a banner which should be shown next
+// Implementation function is based on UCB1 algo for a multiarmed bandit problem
+// Al the theory behind the scenes can be found in paper below:
+// DOI:10.1023/A:1013689704352, Authors: Auer et al., 2002.
+// Original link: https://link.springer.com/content/pdf/10.1023/A:1013689704352.pdf.
+func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID string) (res string, err error) {
+	// saving selected banner id show in db procedure
+	defer func() {
+		if err == nil {
+			if persistErr := r.repo.PersistShow(ctx, slotID, groupID, res); persistErr != nil {
+				res, err = "", fmt.Errorf("failed to store banner show: %w", persistErr)
+			}
 		}
-		if shows == 0 {
-			return banner
+	}()
+
+	bannerStats, err := r.repo.FindSlotBannerStats(ctx, slotID, groupID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get banner statistics for a slot: %w", err)
+	}
+	if len(bannerStats) == 0 {
+		return "", storage.ErrNoBannersFoundForSlot
+	}
+
+	// UCB1 algo implementation below
+	for _, bannerStat := range bannerStats {
+		if bannerStat.GetShows() == 0 {
+			return bannerStat.BannerID, nil
 		}
+	}
+	totalBannerShows, err := r.repo.CountTotalShowsAmount(ctx, slotID, groupID)
+	if err != nil {
+		return "", fmt.Errorf("failed to get total banner shows amount: %w", err)
 	}
 
 	maxTargetValue := 0.0
-	maxBannerIndex := 0
-	for index, banner := range allBanners {
-		bannerClicks, err := r.repo.GetClicksAmount(ctx, slotID, groupID, banner.Id)
-		if err != nil {
-			panic("world collide")
-		}
-		bannerShows, err := r.repo.GetShowsAmount(ctx, slotID, groupID, banner.Id)
-		if err != nil {
-			panic("world collide")
-		}
-		totalBannerShows, err := r.repo.CountTotalShowsAmount(ctx, slotID, groupID)
-		if err != nil {
-			panic("world collide")
-		}
+	maxBannerID := bannerStats[0].BannerID
+	for _, bannerStat := range bannerStats {
+		bannerClicks, bannerShows := bannerStat.GetClicks(), bannerStat.GetShows()
 		targetValue := targetFunction(float64(bannerClicks), float64(bannerShows), float64(totalBannerShows))
 		if big.NewFloat(targetValue).Cmp(big.NewFloat(maxTargetValue)) > 0 {
 			maxTargetValue = targetValue
-			maxBannerIndex = index
+			maxBannerID = bannerStat.BannerID
 		}
 	}
-	return allBanners[maxBannerIndex]
+
+	return maxBannerID, nil
 }
 
 // targetFunction is a maximizing on each step in UCB1 algo function value
