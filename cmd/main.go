@@ -10,9 +10,11 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/Raschudesny/otus_project/v1/internal"
-	"github.com/Raschudesny/otus_project/v1/server"
-	"github.com/Raschudesny/otus_project/v1/storage/sql"
+	"github.com/Raschudesny/otus_project/v1/internal/config"
+	"github.com/Raschudesny/otus_project/v1/internal/logger"
+	"github.com/Raschudesny/otus_project/v1/internal/server"
+	"github.com/Raschudesny/otus_project/v1/internal/services"
+	"github.com/Raschudesny/otus_project/v1/internal/storage/sql"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
 )
@@ -32,11 +34,11 @@ func main() {
 }
 
 func mainImpl() error {
-	config, err := NewConfig(configPath)
+	cnf, err := config.NewConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("error during config reading: %w", err)
 	}
-	if err := InitLogger(config.Logger); err != nil {
+	if err := logger.InitLogger(cnf.Logger); err != nil {
 		return fmt.Errorf("error during logger init: %w", err)
 	}
 	zap.L().Info("Banner rotation service starting...")
@@ -55,8 +57,9 @@ func mainImpl() error {
 	}()
 	zap.L().Info("rotation service storage started")
 
-	app := internal.NewRotationService(dbStorage)
+	app := services.NewRotationService(dbStorage)
 	grpcServer := server.InitServer(app)
+
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {

@@ -7,15 +7,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Raschudesny/otus_project/v1/internal"
-	"github.com/Raschudesny/otus_project/v1/storage"
+	"github.com/Raschudesny/otus_project/v1/internal/services"
+	"github.com/Raschudesny/otus_project/v1/internal/storage"
 	"github.com/jmoiron/sqlx"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/simukti/sqldb-logger/logadapter/zapadapter"
 	"go.uber.org/zap"
 )
 
-var _ internal.Repository = (*Storage)(nil)
+var _ services.Repository = (*Storage)(nil)
 
 type Storage struct {
 	db         *sqlx.DB
@@ -259,23 +259,6 @@ func (s *Storage) DeleteGroup(ctx context.Context, id string) error {
 		return storage.ErrGroupNotFound
 	}
 	return nil
-}
-
-func (s *Storage) Transact(ctx context.Context, work func(*sqlx.Tx) error) error {
-	txx, err := s.db.BeginTxx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	if err = work(txx); err != nil {
-		defer func() {
-			// TODO don't have many thoughts about what to do with rollback error ...
-			if err := txx.Rollback(); err != nil {
-				zap.L().Error("error during transaction rollback", zap.Error(err))
-			}
-		}()
-		return err
-	}
-	return txx.Commit()
 }
 
 //nolint:dupl

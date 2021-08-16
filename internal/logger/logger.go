@@ -1,13 +1,14 @@
-package main
+package logger
 
 import (
 	"fmt"
 
+	"github.com/Raschudesny/otus_project/v1/internal/config"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
-func InitLogger(loggerConfig LoggerConfig) error {
+func InitLogger(loggerConfig config.LoggerConfig) error {
 	config := zap.NewProductionConfig()
 
 	config.EncoderConfig.EncodeDuration = zapcore.MillisDurationEncoder

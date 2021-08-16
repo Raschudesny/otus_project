@@ -1,4 +1,4 @@
-package internal
+package services
 
 import (
 	"context"
@@ -6,29 +6,29 @@ import (
 	"math"
 	"math/big"
 
-	"github.com/Raschudesny/otus_project/v1/server"
-	"github.com/Raschudesny/otus_project/v1/storage"
+	server2 "github.com/Raschudesny/otus_project/v1/internal/server"
+	storage2 "github.com/Raschudesny/otus_project/v1/internal/storage"
 )
 
 type Repository interface {
 	AddSlot(ctx context.Context, description string) (string, error)
-	GetSlotByID(ctx context.Context, id string) (storage.Slot, error)
+	GetSlotByID(ctx context.Context, id string) (storage2.Slot, error)
 	DeleteSlot(ctx context.Context, id string) error
 	AddBanner(ctx context.Context, description string) (string, error)
-	GetBannerByID(ctx context.Context, id string) (storage.Banner, error)
+	GetBannerByID(ctx context.Context, id string) (storage2.Banner, error)
 	DeleteBanner(ctx context.Context, id string) error
 	AddBannerToSlot(ctx context.Context, slotID, bannerID string) error
 	DeleteBannerFromSlot(ctx context.Context, slotID, bannerID string) error
 	AddGroup(ctx context.Context, description string) (string, error)
-	GetGroupByID(ctx context.Context, groupID string) (storage.SocialGroup, error)
+	GetGroupByID(ctx context.Context, groupID string) (storage2.SocialGroup, error)
 	DeleteGroup(ctx context.Context, id string) error
 	PersistClick(ctx context.Context, slotID, groupID, bannerID string) error
 	PersistShow(ctx context.Context, slotID, groupID, bannerID string) error
 	CountTotalShowsAmount(ctx context.Context, slotID, groupID string) (int64, error)
-	FindSlotBannerStats(ctx context.Context, slotID, groupID string) ([]storage.SlotBannerStat, error)
+	FindSlotBannerStats(ctx context.Context, slotID, groupID string) ([]storage2.SlotBannerStat, error)
 }
 
-var _ server.Application = (*RotationService)(nil)
+var _ server2.Application = (*RotationService)(nil)
 
 type RotationService struct {
 	repo Repository
@@ -38,17 +38,17 @@ func NewRotationService(repository Repository) RotationService {
 	return RotationService{repo: repository}
 }
 
-func (r RotationService) AddSlot(ctx context.Context, description string) (storage.Slot, error) {
+func (r RotationService) AddSlot(ctx context.Context, description string) (storage2.Slot, error) {
 	if description == "" {
-		return storage.Slot{}, fmt.Errorf("description param is empty")
+		return storage2.Slot{}, fmt.Errorf("description param is empty")
 	}
 	slotID, err := r.repo.AddSlot(ctx, description)
 	if err != nil {
-		return storage.Slot{}, fmt.Errorf("error during slot creation: %w", err)
+		return storage2.Slot{}, fmt.Errorf("error during slot creation: %w", err)
 	}
 	slot, err := r.repo.GetSlotByID(ctx, slotID)
 	if err != nil {
-		return storage.Slot{}, fmt.Errorf("error during getting slot by id: %w", err)
+		return storage2.Slot{}, fmt.Errorf("error during getting slot by id: %w", err)
 	}
 	return slot, nil
 }
@@ -90,17 +90,17 @@ func (r RotationService) DeleteBannerFromSlot(ctx context.Context, bannerID, slo
 	return nil
 }
 
-func (r RotationService) AddBanner(ctx context.Context, description string) (storage.Banner, error) {
+func (r RotationService) AddBanner(ctx context.Context, description string) (storage2.Banner, error) {
 	if description == "" {
-		return storage.Banner{}, fmt.Errorf("description param is empty")
+		return storage2.Banner{}, fmt.Errorf("description param is empty")
 	}
 	bannerID, err := r.repo.AddBanner(ctx, description)
 	if err != nil {
-		return storage.Banner{}, fmt.Errorf("error during creating banner: %w", err)
+		return storage2.Banner{}, fmt.Errorf("error during creating banner: %w", err)
 	}
 	banner, err := r.repo.GetBannerByID(ctx, bannerID)
 	if err != nil {
-		return storage.Banner{}, fmt.Errorf("error during retrieving created banner: %w", err)
+		return storage2.Banner{}, fmt.Errorf("error during retrieving created banner: %w", err)
 	}
 	return banner, nil
 }
@@ -115,17 +115,17 @@ func (r RotationService) DeleteBanner(ctx context.Context, bannerID string) erro
 	return nil
 }
 
-func (r RotationService) AddGroup(ctx context.Context, description string) (storage.SocialGroup, error) {
+func (r RotationService) AddGroup(ctx context.Context, description string) (storage2.SocialGroup, error) {
 	if description == "" {
-		return storage.SocialGroup{}, fmt.Errorf("description is empty")
+		return storage2.SocialGroup{}, fmt.Errorf("description is empty")
 	}
 	groupID, err := r.repo.AddGroup(ctx, description)
 	if err != nil {
-		return storage.SocialGroup{}, fmt.Errorf("error during adding group: %w", err)
+		return storage2.SocialGroup{}, fmt.Errorf("error during adding group: %w", err)
 	}
 	group, err := r.repo.GetGroupByID(ctx, groupID)
 	if err != nil {
-		return storage.SocialGroup{}, fmt.Errorf("error during retrieving froup by id: %w", err)
+		return storage2.SocialGroup{}, fmt.Errorf("error during retrieving froup by id: %w", err)
 	}
 	return group, nil
 }
@@ -177,7 +177,7 @@ func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID strin
 		return "", fmt.Errorf("failed to get banner statistics for a slot: %w", err)
 	}
 	if len(bannerStats) == 0 {
-		return "", storage.ErrNoBannersFoundForSlot
+		return "", storage2.ErrNoBannersFoundForSlot
 	}
 
 	// UCB1 algo implementation below

@@ -134,3 +134,10 @@ logger:
 {"level":"info","ts":"2021-08-16T00:55:28.168+0300","caller":"server/server.go:207","msg":"GRPC server stopping..."}
 {"level":"info","ts":"2021-08-16T00:55:28.169+0300","caller":"server/server.go:209","msg":"GRPC server stopped"}
 {"level":"info","ts":"2021-08-16T00:55:28.169+0300","caller":"otus_project/main.go:73","msg":"rotation service stopped"}
+{"level":"info","ts":"2021-08-16T06:39:05.360+0300","caller":"cmd/main.go:45","msg":"Banner rotation service starting..."}
+{"level":"info","ts":"2021-08-16T06:39:05.363+0300","caller":"cmd/main.go:49","msg":"rotation service storage starting..."}
+{"level":"info","ts":"2021-08-16T06:39:05.388+0300","caller":"cmd/main.go:59","msg":"rotation service storage started"}
+{"level":"info","ts":"2021-08-16T06:39:05.388+0300","caller":"server/server.go:196","msg":"GRPC server starting...","address":"localhost:56789"}
+{"level":"info","ts":"2021-08-16T06:39:12.512+0300","caller":"server/server.go:209","msg":"GRPC server stopping..."}
+{"level":"info","ts":"2021-08-16T06:39:12.512+0300","caller":"server/server.go:211","msg":"GRPC server stopped"}
+{"level":"info","ts":"2021-08-16T06:39:12.513+0300","caller":"cmd/main.go:77","msg":"rotation service stopped"}

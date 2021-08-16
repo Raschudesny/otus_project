@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Raschudesny/otus_project/v1/server/pb"
-	"github.com/Raschudesny/otus_project/v1/storage"
+	"github.com/Raschudesny/otus_project/v1/internal/server/pb"
+	"github.com/Raschudesny/otus_project/v1/internal/storage"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"

@@ -2,6 +2,11 @@ version: '3'
 
 vars:
   BINARY: bin/banner_rotation
+  API: api
+  CONFIG: configs/config.yaml
+  MIGRATIONS: migrations
+  DB: postgres
+  DSN: host=localhost user=danny password=danny dbname=rotation sslmode=disable
 
 tasks:
   default:
@@ -10,13 +15,13 @@ tasks:
   build:
     desc: Build the go binary
     cmds:
-      - go build -v -o bin/banner_rotation .
+      - go build -v -o {{.BINARY}} ./cmd
 
   run:
     desc: Run the banner_rotation service with default config(from configs directory)
     deps: [ build ]
     cmds:
-      - ./{{.BINARY}} --config=./configs/config.yaml
+      - ./{{.BINARY}} --config={{.CONFIG}}
 
   clean:
     desc: Clean binary directory
@@ -47,14 +52,14 @@ tasks:
   migrate_up:
     desc: Apply all migrations from migrations dir
     cmds:
-      - goose -dir migrations postgres "host=localhost user=danny password=danny dbname=rotation sslmode=disable" up
+      - goose -dir {{.MIGRATIONS}} {{.DB}} "{{.DSN}}" up
 
   migrate_down:
     desc: Rollback all migrations from migrations dir
     cmds:
-      - goose -dir migrations postgres "host=localhost user=danny password=danny dbname=rotation sslmode=disable" down
+      - goose -dir {{.MIGRATIONS}} {{.DB}} "{{.DSN}}" down
 
   evans:
-    desc: Start evans grpc evans (https://github.com/ktr0731/evans) client
+    desc: Start evans grpc (https://github.com/ktr0731/evans) client
     cmds:
-      - evans api/*.proto --port=56789
+      - evans {{.API}}/*.proto --port=56789
