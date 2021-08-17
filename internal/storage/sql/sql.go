@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Raschudesny/otus_project/v1/internal/config"
 	"github.com/Raschudesny/otus_project/v1/internal/services"
 	"github.com/Raschudesny/otus_project/v1/internal/storage"
 	"github.com/jmoiron/sqlx"
@@ -18,13 +19,22 @@ import (
 var _ services.Repository = (*Storage)(nil)
 
 type Storage struct {
-	db         *sqlx.DB
-	driverName string
-	dsn        string
+	db                    *sqlx.DB
+	driverName            string
+	dsn                   string
+	maxOpenConnections    int
+	maxIdleConnections    int
+	maxConnectionLifetime time.Duration
 }
 
-func NewStorage(driverName, dsn string) *Storage {
-	return &Storage{driverName: driverName, dsn: dsn}
+func NewStorage(driverName string, cnf config.DBConfig) *Storage {
+	return &Storage{
+		driverName:            driverName,
+		dsn:                   cnf.DSN,
+		maxOpenConnections:    cnf.MaxOpenConnections,
+		maxIdleConnections:    cnf.MaxIdleConnections,
+		maxConnectionLifetime: cnf.MaxConnectionLifetime,
+	}
 }
 
 func (s *Storage) Connect(ctx context.Context) (err error) {
@@ -33,9 +43,9 @@ func (s *Storage) Connect(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to open db connection: %w", err)
 	}
 
-	db.SetMaxOpenConns(20)
-	db.SetMaxIdleConns(5)
-	db.SetConnMaxLifetime(time.Minute * 3)
+	db.SetMaxOpenConns(s.maxOpenConnections)
+	db.SetMaxIdleConns(s.maxIdleConnections)
+	db.SetConnMaxLifetime(s.maxConnectionLifetime)
 
 	loggerAdapter := zapadapter.New(zap.L())
 	db = sqldblogger.OpenDriver(s.dsn, db.Driver(), loggerAdapter)

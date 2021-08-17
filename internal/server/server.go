@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"net"
+	"strconv"
 	"strings"
-	"time"
 
+	"github.com/Raschudesny/otus_project/v1/internal/config"
 	"github.com/Raschudesny/otus_project/v1/internal/server/pb"
 	"github.com/Raschudesny/otus_project/v1/internal/storage"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
@@ -171,30 +172,35 @@ func (r *RotationService) NextBanner(ctx context.Context, req *pb.NextBannerRequ
 }
 
 type Server struct {
-	Srv *grpc.Server
+	Srv  *grpc.Server
+	host string
+	port int
 }
 
-func InitServer(app Application) *Server {
+func InitServer(app Application, cnf config.ServerConfig) *Server {
 	srv := grpc.NewServer(
-		grpc.ConnectionTimeout(5*time.Second),
+		grpc.ConnectionTimeout(cnf.ConnectionTimeout),
 		grpc.UnaryInterceptor(grpc_zap.UnaryServerInterceptor(zap.L())),
 		grpc.StreamInterceptor(grpc_zap.StreamServerInterceptor(zap.L())),
 	)
 	pb.RegisterBannerRotationServiceServer(srv, &RotationService{app: app})
 	return &Server{
-		Srv: srv,
+		Srv:  srv,
+		host: cnf.Host,
+		port: cnf.Port,
 	}
 }
 
 // Start function is starting grpc api server on the given port.
 // This function is blocking so it must be called in separate goroutine.
 // If server start fails, CancelFunc will be called.
-func (s Server) Start(host string, port string, cancelFunc context.CancelFunc) {
+func (s Server) Start(cancelFunc context.CancelFunc) {
 	// manually calling server shutdown
 	defer cancelFunc()
 
-	zap.L().Info("GRPC server starting...", zap.String("address", net.JoinHostPort(host, port)))
-	lsn, err := net.Listen("tcp", net.JoinHostPort(host, port))
+	address := net.JoinHostPort(s.host, strconv.Itoa(s.port))
+	zap.L().Info("GRPC server starting...", zap.String("address", address))
+	lsn, err := net.Listen("tcp", address)
 	if err != nil {
 		zap.L().Error("Failed to start grpc server", zap.Error(err))
 		return

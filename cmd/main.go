@@ -46,7 +46,7 @@ func mainImpl() error {
 	defer stop()
 
 	zap.L().Info("rotation service storage starting...")
-	dbStorage := sql.NewStorage("pgx", "host=localhost dbname=rotation user=danny password=danny sslmode=disable")
+	dbStorage := sql.NewStorage("pgx", cnf.DB)
 	if err := dbStorage.Connect(ctx); err != nil {
 		return fmt.Errorf("failed to init db storage: %w", err)
 	}
@@ -58,13 +58,13 @@ func mainImpl() error {
 	zap.L().Info("rotation service storage started")
 
 	app := services.NewRotationService(dbStorage)
-	grpcServer := server.InitServer(app)
+	grpcServer := server.InitServer(app, cnf.Server)
 
 	wg := sync.WaitGroup{}
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		grpcServer.Start("localhost", "56789", stop)
+		grpcServer.Start(stop)
 	}()
 	wg.Add(1)
 	go func() {

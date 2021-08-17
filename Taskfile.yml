@@ -62,4 +62,4 @@ tasks:
   evans:
     desc: Start evans grpc (https://github.com/ktr0731/evans) client
     cmds:
-      - evans {{.API}}/*.proto --port=56789
+      - evans {{.API}}/*.proto --port=50051

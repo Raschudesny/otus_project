@@ -17,3 +17,6 @@ vendor/
 
 # GoLand folders
 .idea/
+
+# All *.log extension files
+*.log
