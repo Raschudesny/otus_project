@@ -45,7 +45,7 @@ tasks:
       - go test -race -count 100 ./...
 
   generate:
-    desc: Generate all requried for project build codegenerated sources
+    desc: Generate all required for project build code generated sources
     cmds:
       - go generate -x ./...
 
