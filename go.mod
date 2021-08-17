@@ -3,6 +3,8 @@ module github.com/Raschudesny/otus_project/v1
 go 1.16
 
 require (
+	github.com/bxcodec/faker/v3 v3.6.0
+	github.com/golang/mock v1.5.0
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/jackc/pgx/v4 v4.13.0
 	github.com/jmoiron/sqlx v1.3.4

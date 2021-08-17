@@ -15,18 +15,18 @@ var (
 )
 
 type Banner struct {
-	ID          string `db:"banner_id"`
-	Description string `db:"banner_description"`
+	ID          string `db:"banner_id" faker:"uuid_hyphenated"`
+	Description string `db:"banner_description" faker:"sentence"`
 }
 
 type Slot struct {
-	ID          string `db:"slot_id"`
-	Description string `db:"slot_description"`
+	ID          string `db:"slot_id" faker:"uuid_hyphenated"`
+	Description string `db:"slot_description" faker:"sentence"`
 }
 
 type SocialGroup struct {
-	ID          string `db:"group_id"`
-	Description string `db:"group_description"`
+	ID          string `db:"group_id" faker:"uuid_hyphenated"`
+	Description string `db:"group_description" faker:"sentence"`
 }
 
 type SlotBannerStat struct {
