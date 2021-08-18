@@ -15,9 +15,9 @@ COPY . ${CODE_DIR}
 
 # Собираем статический бинарник Go (без зависимостей на Си API),
 # иначе он не будет работать в alpine образе.
-ARG LDFLAGS
+
 RUN CGO_ENABLED=0 go build \
-        -ldflags "$LDFLAGS" \
+        -ldflags "-X 'main.release=develop' -X 'main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%S)' -X 'main.gitHash=$(git log --format="%h" -n 1)'" \
         -v -o ${BIN_FILE} ./cmd/
 
 # На выходе тонкий образ
@@ -30,7 +30,9 @@ LABEL MAINTAINERS="rifkinsm@gmail.com"
 ENV BIN_FILE "/opt/rotation/banner-rotation-app"
 COPY --from=build ${BIN_FILE} ${BIN_FILE}
 
-ENV CONFIG_FILE /etc/banner-rotation/config.yaml
-COPY configs/config.yaml ${CONFIG_FILE}
+ARG CONFIG_PATH
+ENV APP_CONFIG /etc/banner-rotation/config.yaml
+COPY ${CONFIG_PATH} ${APP_CONFIG}
 
-CMD ${BIN_FILE} --config=${CONFIG_FILE}
+CMD ${BIN_FILE} --config=${APP_CONFIG}
+

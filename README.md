@@ -25,15 +25,19 @@ See the [build guide](docs/build-guide.md).
 ## Commands
 Available tasks for this project:
 
-* **Build the go binary:** `task build`
+* **Alias for local:build command:** `task build`
 * **Clean binary directory:** `task clean`
-* **Run the banner_rotation service with default config(from configs directory) locally:** `task run-locally`
-* **Run the banner_rotation service with default config(from configs directory) in docker:** `task run`
-* **Stop the banner_rotation service in docker:** `task stop`
-* **Run test with race detector:** `task test`
-* **Generate all required for project build code generated sources:** `task generate`
-* **Lint project:** `task lint`
-* **Install lint dependencies:** `task install-lint-deps`
-* **Rollback all migrations from migrations dir:**: `task migrate_down`
-* **Apply all migrations from migrations dir:** : `task migrate_up`
+* **Build docker image of service** `task docker:build`
+* **Runs the banner rotation service with all required environment(db, redis) in docker via docker-compose** `task docker:run`
+* **Stop the bannerrotation service in docker** `task docker:stop`
 * **Start [evans](https://github.com/ktr0731/evans) grpc  client:** `task evans`
+* **Generate all required for project build code generated sources:** `task generate`
+* **Install lint dependencies:** `task install-lint-deps`
+* **Lint project:** `task lint`
+* **Build the go binary locally:** `task local:build`
+* **Run the banner_rotation service with default config(from configs directory) locally:** `task local:run`
+* **Apply all migrations from migrations dir:** : `task migrations:up`
+* **Rollback all migrations from migrations dir:**: `task migrations:down`
+* **Alias for docker:run command:** `task run`
+* **Alias for docker:stop command:** `task stop`
+* **Run test with race detector:** `task test`

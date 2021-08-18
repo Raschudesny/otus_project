@@ -35,6 +35,13 @@ func main() {
 
 func mainImpl() error {
 	flag.Parse()
+	for _, arg := range flag.Args() {
+		if arg == "version" {
+			printVersion()
+			return nil
+		}
+	}
+
 	cnf, err := config.NewConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("error during config reading: %w", err)

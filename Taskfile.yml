@@ -3,35 +3,58 @@ version: '3'
 vars:
   BINARY: bin/banner_rotation
   API: api
-  CONFIG: configs/config.yaml
   MIGRATIONS: migrations
   DB: postgres
   DSN: host=localhost user=danny password=danny dbname=rotation sslmode=disable
+  GIT_HASH: $(git log --format="%h" -n 1)
+  LDFLAGS: -X main.release="develop" -X main.buildDate=$(date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash={{.GIT_HASH}}
+  DOCKER_IMG: "rotation:develop"
+  LOCAL_CONFIG_PATH: configs/without-compose-config.yaml
 
 tasks:
   default:
     - task: build
 
-  build:
-    desc: Build the go binary
+  local:build:
+    desc: Build the go binary locally
     cmds:
-      - go build -v -o {{.BINARY}} ./cmd
+      - go build -v -o {{.BINARY}} -ldflags "{{.LDFLAGS}}" ./cmd
 
-  run-locally:
+  local:run:
     desc: Run the banner_rotation service with default config(from configs directory) locally
-    deps: [ build ]
+    deps: [ local:build ]
     cmds:
-      - ./{{.BINARY}} --config={{.CONFIG}}
+      - ./{{.BINARY}} --config=./{{.LOCAL_CONFIG_PATH}}
 
-  run:
-    desc: Run the banner_rotation service with default config(from configs directory) in docker
+  docker:build:
+    desc: Build docker image of service
+    cmds:
+      - docker-compose build --no-cache
+
+  docker:run:
+    desc: Runs the banner rotation service with all required environment(db, redis) in docker via docker-compose
     cmds:
       - docker-compose up -d
 
-  stop:
+  docker:stop:
     desc: Stop the banner_rotation service in docker
     cmds:
       - docker-compose down
+
+  build:
+    desc: Alias for local:build command
+    cmds:
+      - task: local:build
+
+  run:
+    desc: Alias for docker:run command.
+    cmds:
+      - task: docker:run
+
+  stop:
+    desc: Alias for docker:stop command.
+    cmds:
+      - task: docker:stop
 
   clean:
     desc: Clean binary directory
@@ -40,12 +63,12 @@ tasks:
 
   lint:
     desc: Lint project
+    deps: [ install-lint-deps ]
     cmds:
-      - task: install-lint-deps 
       - golangci-lint run ./...
 
   install-lint-deps:
-    desc: Intall lint dependencies
+    desc: Install lint dependencies
     cmds:
       - (which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.1
 
@@ -59,12 +82,12 @@ tasks:
     cmds:
       - go generate -x ./...
 
-  migrate_up:
+  migrations:up:
     desc: Apply all migrations from migrations dir
     cmds:
       - goose -dir {{.MIGRATIONS}} {{.DB}} "{{.DSN}}" up
 
-  migrate_down:
+  migrations:down:
     desc: Rollback all migrations from migrations dir
     cmds:
       - goose -dir {{.MIGRATIONS}} {{.DB}} "{{.DSN}}" down

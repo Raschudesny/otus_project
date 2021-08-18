@@ -1,0 +1,12 @@
+logger:
+  level: info
+  file: ./rotation_logs.log
+db:
+  maxOpenConnections: 20
+  maxIdleConnections: 5
+  maxConnectionLifetime: 3m
+  dsn: "host=localhost user=danny password=danny dbname=rotation sslmode=disable"
+server:
+  host: localhost
+  port: 50051
+  connectionTimeout: 5s

@@ -11,7 +11,7 @@ services:
   postgres:
     image: postgres
     hostname: postgres
-    container_name: postgres-db
+    container_name: rotation-postgres
     ports:
       - '5432:5432'
     expose:
@@ -31,16 +31,32 @@ services:
           - db
           - net-db
 
+  rabbit:
+    image: rabbitmq
+    hostname: rabbit
+    container_name: rotation-rabbit
+    ports:
+      - '15672:15672'
+      - '5672:5672'
+    expose:
+      - 15672
+    restart: always
+    networks:
+      rotation-network:
+        ipv4_address: 10.20.30.20
+        aliases:
+          - rabbit
+          - net-rabbit
+
   initializer:
     build:
       context: .
       dockerfile: ./migrations/Dockerfile
-    container_name: migrations-initializer
+    container_name: rotation-migrations-init
     depends_on:
       - postgres
     networks:
       rotation-network:
-        ipv4_address: 10.20.30.20
         aliases:
           - ini
           - net-ini
@@ -49,10 +65,13 @@ services:
     build:
       context: .
       dockerfile: ./build/Dockerfile
-    container_name: banner-rotation-app
+      args:
+        - CONFIG_PATH=./configs/config.yaml
+    container_name: rotation-app
     depends_on:
       - initializer
       - postgres
+      - rabbit
     ports:
       - '50051:50051'
     expose:
