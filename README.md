@@ -34,6 +34,6 @@ Available tasks for this project:
 * **Generate all required for project build code generated sources:** `task generate`
 * **Lint project:** `task lint`
 * **Install lint dependencies:** `task install-lint-deps`
-* **Rollback all migrations from migrations dir:**: `task migrate_down`
-* **Apply all migrations from migrations dir:** : `task migrate_up`
+* **Rollback all migrations from migrations dir:** `task migrate_down`
+* **Apply all migrations from migrations dir:**  `task migrate_up`
 * **Start [evans](https://github.com/ktr0731/evans) grpc  client:** `task evans`
