@@ -34,6 +34,7 @@ func main() {
 }
 
 func mainImpl() error {
+	flag.Parse()
 	cnf, err := config.NewConfig(configPath)
 	if err != nil {
 		return fmt.Errorf("error during config reading: %w", err)

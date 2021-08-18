@@ -17,11 +17,21 @@ tasks:
     cmds:
       - go build -v -o {{.BINARY}} ./cmd
 
-  run:
-    desc: Run the banner_rotation service with default config(from configs directory)
+  run-locally:
+    desc: Run the banner_rotation service with default config(from configs directory) locally
     deps: [ build ]
     cmds:
       - ./{{.BINARY}} --config={{.CONFIG}}
+
+  run:
+    desc: Run the banner_rotation service with default config(from configs directory) in docker
+    cmds:
+      - docker-compose up -d
+
+  stop:
+    desc: Stop the banner_rotation service in docker
+    cmds:
+      - docker-compose down
 
   clean:
     desc: Clean binary directory

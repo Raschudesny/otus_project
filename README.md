@@ -27,7 +27,9 @@ Available tasks for this project:
 
 * **Build the go binary:** `task build`
 * **Clean binary directory:** `task clean`
-* **Run the banner_rotation service with default config(from configs directory):** `task run`
+* **Run the banner_rotation service with default config(from configs directory) locally:** `task run-locally`
+* **Run the banner_rotation service with default config(from configs directory) in docker:** `task run`
+* **Stop the banner_rotation service in docker:** `task stop`
 * **Run test with race detector:** `task test`
 * **Generate all required for project build code generated sources:** `task generate`
 * **Lint project:** `task lint`

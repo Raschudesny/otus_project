@@ -4,11 +4,9 @@ logger:
 db:
   maxOpenConnections: 20
   maxIdleConnections: 5
-  # connection lifetime in minutes
   maxConnectionLifetime: 3m
-  dsn: "host=localhost user=danny password=danny dbname=rotation sslmode=disable"
+  dsn: "host=net-db user=danny password=danny dbname=rotation sslmode=disable"
 server:
-  host: localhost
+  host: net-rotation
   port: 50051
-  # connection timeout in seconds
   connectionTimeout: 5s

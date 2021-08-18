@@ -1,0 +1,72 @@
+version: '3.7'
+
+networks:
+  rotation-network:
+    ipam:
+      driver: default
+      config:
+        - subnet: "10.20.30.0/24"
+
+services:
+  postgres:
+    image: postgres
+    hostname: postgres
+    container_name: postgres-db
+    ports:
+      - '5432:5432'
+    expose:
+      - 5432
+    restart: always
+    environment:
+      POSTGRES_USER: danny
+      POSTGRES_PASSWORD: danny
+      POSTGRES_DB: rotation
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - /Users/d.udovichenko/psqldata:/var/lib/postgresql/data/pgdata
+    networks:
+      rotation-network:
+        ipv4_address: 10.20.30.10
+        aliases:
+          - db
+          - net-db
+
+  initializer:
+    build:
+      context: .
+      dockerfile: ./migrations/Dockerfile
+    container_name: migrations-initializer
+    depends_on:
+      - postgres
+    networks:
+      rotation-network:
+        ipv4_address: 10.20.30.20
+        aliases:
+          - ini
+          - net-ini
+
+  banners-rotation:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile
+    container_name: banner-rotation-app
+    depends_on:
+      - initializer
+      - postgres
+    ports:
+      - '50051:50051'
+    expose:
+      - 50051
+    networks:
+      rotation-network:
+        ipv4_address: 10.20.30.30
+        aliases:
+          - rotation
+          - net-rotation
+
+
+
+
+
+
+
