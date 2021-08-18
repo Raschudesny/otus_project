@@ -8,11 +8,11 @@
 ---
 _Simple service for banner rotation purposes._
 > This is OTUS "Golang Developer Professional" final project repository. Service technical specification can be [found here](docs/tz.md).
---- 
+---
 
 ## Global description
 
-This service purpose is to provide the most popular (in "clicks" metric) banner. 
+This service purpose is to provide the most popular (in "clicks" metric) banner.
 
 ## Documentation
 
