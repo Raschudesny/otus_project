@@ -33,4 +33,4 @@ jobs:
         run: task test
 
       - name: Task build
-        run: task build-local
+        run: task build
