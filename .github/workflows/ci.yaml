@@ -27,7 +27,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Task lint
-        run: task lint
+        run: task lint -- --timeout 5m
 
       - name: Task test
         run: task test

@@ -65,7 +65,7 @@ tasks:
     desc: Lint project
     deps: [ install-lint-deps ]
     cmds:
-      - golangci-lint run ./...
+      - golangci-lint {{.CLI_ARGS}} run ./...
 
   install-lint-deps:
     desc: Install lint dependencies
