@@ -25,6 +25,10 @@ db:
 server:
   port: 12345
   connectionTimeout: 10s
+publisher:
+  uri: "amqp://blabla:lala@nelocalhost:1234/"
+  queueName: "some queue name here"
+  exchangeName: "some exchange name here"
 `
 )
 
@@ -71,4 +75,9 @@ func TestConfigReading(t *testing.T) {
 	require.Equal(t, cfg.Server.Host, "localhost")
 	require.Equal(t, cfg.Server.Port, 12345)
 	require.Equal(t, cfg.Server.ConnectionTimeout, time.Second*10)
+
+	// check publisher cfg parsed successfully
+	require.Equal(t, cfg.Publisher.URI, "amqp://blabla:lala@nelocalhost:1234/")
+	require.Equal(t, cfg.Publisher.QueueName, "some queue name here")
+	require.Equal(t, cfg.Publisher.ExchangeName, "some exchange name here")
 }

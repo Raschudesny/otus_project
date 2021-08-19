@@ -29,7 +29,7 @@ tasks:
   docker:build:
     desc: Build docker image of service
     cmds:
-      - docker-compose build --no-cache
+      - docker-compose build --no-cache --parallel
 
   docker:run:
     desc: Runs the banner rotation service with all required environment(db, redis) in docker via docker-compose

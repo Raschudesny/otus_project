@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Logger LoggerConfig
-	DB     DBConfig
-	Server ServerConfig
+	Logger    LoggerConfig
+	DB        DBConfig
+	Server    ServerConfig
+	Publisher PublisherConfig
 }
 
 type LoggerConfig struct {
@@ -29,6 +30,12 @@ type ServerConfig struct {
 	Host              string
 	Port              int
 	ConnectionTimeout time.Duration
+}
+
+type PublisherConfig struct {
+	URI          string
+	QueueName    string
+	ExchangeName string
 }
 
 func NewConfig(path string) (cfg Config, err error) {
@@ -71,6 +78,11 @@ func NewConfig(path string) (cfg Config, err error) {
 			Port:              viper.GetInt("server.port"),
 			ConnectionTimeout: serverConnectionTimeout,
 		},
+		Publisher: PublisherConfig{
+			URI:          viper.GetString("publisher.uri"),
+			QueueName:    viper.GetString("publisher.queuename"),
+			ExchangeName: viper.GetString("publisher.exchangename"),
+		},
 	}, nil
 }
 
@@ -84,4 +96,7 @@ func InitDefaults() {
 	viper.SetDefault("server.host", "localhost")
 	viper.SetDefault("server.port", 50051)
 	viper.SetDefault("server.connectiontimeout", "5s")
+	viper.SetDefault("publisher.uri", "amqp://guest:guest@localhost:5672/")
+	viper.SetDefault("publisher.queuename", "banner-stats-queue")
+	viper.SetDefault("publisher.exchangename", "banner-stats-exchange")
 }

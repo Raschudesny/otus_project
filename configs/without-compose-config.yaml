@@ -10,3 +10,7 @@ server:
   host: localhost
   port: 50051
   connectionTimeout: 5s
+publisher:
+  uri: "amqp://guest:guest@localhost:5672/"
+  queueName: "banner-stats-queue"
+  exchangeName: "banner-stats-exchange"

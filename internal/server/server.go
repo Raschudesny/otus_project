@@ -17,7 +17,7 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-//go:generate protoc --proto_path=../api --go_out=pb --go-grpc_out=pb ../api/rotation_service.proto
+//go:generate protoc --proto_path=../../api --go_out=pb --go-grpc_out=pb ../../api/rotation_service.proto
 var _ pb.BannerRotationServiceServer = (*RotationService)(nil)
 
 type RotationService struct {

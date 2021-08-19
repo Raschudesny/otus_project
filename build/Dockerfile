@@ -34,5 +34,8 @@ ARG CONFIG_PATH
 ENV APP_CONFIG /etc/banner-rotation/config.yaml
 COPY ${CONFIG_PATH} ${APP_CONFIG}
 
-CMD ${BIN_FILE} --config=${APP_CONFIG}
+ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
+RUN chmod +x /wait
+
+CMD ./wait && ${BIN_FILE} --config=${APP_CONFIG}
 

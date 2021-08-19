@@ -14,6 +14,7 @@ import (
 	"github.com/Raschudesny/otus_project/v1/internal/logger"
 	"github.com/Raschudesny/otus_project/v1/internal/server"
 	"github.com/Raschudesny/otus_project/v1/internal/services"
+	"github.com/Raschudesny/otus_project/v1/internal/stats"
 	"github.com/Raschudesny/otus_project/v1/internal/storage/sql"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"go.uber.org/zap"
@@ -62,10 +63,26 @@ func mainImpl() error {
 		if err := dbStorage.Close(); err != nil {
 			zap.L().Error("failed to close db storage", zap.Error(err))
 		}
+		zap.L().Info("rotation service storage stopped")
 	}()
 	zap.L().Info("rotation service storage started")
 
-	app := services.NewRotationService(dbStorage)
+	zap.L().Info("rotation service stats publisher starting...")
+	publisher, err := stats.NewPublisher(cnf.Publisher)
+	if err != nil {
+		return fmt.Errorf("error during stats publisher initialization: %w", err)
+	}
+	if err := publisher.Start(); err != nil {
+		return fmt.Errorf("failed to start stats publisher: %w", err)
+	}
+	defer func() {
+		if err := publisher.Stop(); err != nil {
+			zap.L().Error("error during stats publisher stopping", zap.Error(err))
+		}
+		zap.L().Info("rotation service stats publisher stopped")
+	}()
+
+	app := services.NewRotationService(dbStorage, publisher)
 	grpcServer := server.InitServer(app, cnf.Server)
 
 	wg := sync.WaitGroup{}

@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"time"
 
 	"github.com/Raschudesny/otus_project/v1/internal/server"
+	"github.com/Raschudesny/otus_project/v1/internal/stats"
 	"github.com/Raschudesny/otus_project/v1/internal/storage"
 )
 
-//go:generate mockgen --build_flags=--mod=mod -destination=./mock_types_test.go -package=services_test . Repository
+//nolint:lll
+//go:generate mockgen --build_flags=--mod=mod -destination=./mock_types_test.go -package=services_test . Repository,EventsPublisher
 type Repository interface {
 	AddSlot(ctx context.Context, description string) (string, error)
 	GetSlotByID(ctx context.Context, id string) (storage.Slot, error)
@@ -29,14 +32,19 @@ type Repository interface {
 	FindSlotBannerStats(ctx context.Context, slotID, groupID string) ([]storage.SlotBannerStat, error)
 }
 
+type EventsPublisher interface {
+	Publish(msg stats.Message) error
+}
+
 var _ server.Application = (*RotationService)(nil)
 
 type RotationService struct {
-	repo Repository
+	repo      Repository
+	publisher EventsPublisher
 }
 
-func NewRotationService(repository Repository) RotationService {
-	return RotationService{repo: repository}
+func NewRotationService(repo Repository, publisher EventsPublisher) RotationService {
+	return RotationService{repo, publisher}
 }
 
 func (r RotationService) AddSlot(ctx context.Context, description string) (storage.Slot, error) {
@@ -155,6 +163,15 @@ func (r RotationService) PersistClick(ctx context.Context, slotID, groupID, bann
 	if err := r.repo.PersistClick(ctx, slotID, groupID, bannerID); err != nil {
 		return fmt.Errorf("failed to persist banner click stats: %w", err)
 	}
+	if err := r.publisher.Publish(stats.Message{
+		BannerID:  bannerID,
+		SlotID:    slotID,
+		GroupID:   groupID,
+		Type:      "click",
+		Timestamp: time.Now(),
+	}); err != nil {
+		return fmt.Errorf("failed to publish click event stats to rabbit queue: %w", err)
+	}
 	return nil
 }
 
@@ -164,11 +181,23 @@ func (r RotationService) PersistClick(ctx context.Context, slotID, groupID, bann
 // DOI:10.1023/A:1013689704352, Authors: Auer et al., 2002.
 // Original link: https://link.springer.com/content/pdf/10.1023/A:1013689704352.pdf.
 func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID string) (res string, err error) {
-	// saving selected banner id show in db procedure
+	// saving selected banner id show in db and publish stats to queue
+	// maybe a little bit overcomplicated code here ...
 	defer func() {
 		if err == nil {
 			if persistErr := r.repo.PersistShow(ctx, slotID, groupID, res); persistErr != nil {
 				res, err = "", fmt.Errorf("failed to store banner show: %w", persistErr)
+			}
+		}
+		if err == nil {
+			if publishErr := r.publisher.Publish(stats.Message{
+				BannerID:  res,
+				SlotID:    slotID,
+				GroupID:   groupID,
+				Type:      "show",
+				Timestamp: time.Now(),
+			}); publishErr != nil {
+				res, err = "", fmt.Errorf("failed to publish click event stats to rabbit queue: %w", err)
 			}
 		}
 	}()

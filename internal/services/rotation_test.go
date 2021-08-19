@@ -3,11 +3,13 @@ package services_test
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"math/rand"
 	"testing"
 	"time"
 
 	"github.com/Raschudesny/otus_project/v1/internal/services"
+	"github.com/Raschudesny/otus_project/v1/internal/stats"
 	"github.com/Raschudesny/otus_project/v1/internal/storage"
 	"github.com/bxcodec/faker/v3"
 	"github.com/golang/mock/gomock"
@@ -20,6 +22,7 @@ type RotationSuite struct {
 	cancelFunc      context.CancelFunc
 	ctl             *gomock.Controller
 	mockRepo        *MockRepository
+	mockPublisher   *MockEventsPublisher
 	rotationService services.RotationService
 }
 
@@ -32,7 +35,8 @@ func (s *RotationSuite) SetupTest() {
 	s.ctx, s.cancelFunc = context.WithTimeout(context.Background(), time.Second*10)
 	s.ctl = gomock.NewController(s.T())
 	s.mockRepo = NewMockRepository(s.ctl)
-	s.rotationService = services.NewRotationService(s.mockRepo)
+	s.mockPublisher = NewMockEventsPublisher(s.ctl)
+	s.rotationService = services.NewRotationService(s.mockRepo, s.mockPublisher)
 
 	// init random function
 	seed := time.Now().UnixNano()
@@ -128,7 +132,14 @@ func (s RotationSuite) TestPersistClick() {
 	testBannerID := faker.UUIDHyphenated()
 	testGroupID := faker.UUIDHyphenated()
 
-	s.mockRepo.EXPECT().PersistClick(s.ctx, testSlotID, testGroupID, testBannerID).Return(nil)
+	s.mockRepo.EXPECT().PersistClick(s.ctx, testSlotID, testGroupID, testBannerID).Times(1).Return(nil)
+	s.mockPublisher.EXPECT().Publish(matchWithBannerID(messageMatcher{stats.Message{
+		BannerID:  testBannerID,
+		SlotID:    testSlotID,
+		GroupID:   testGroupID,
+		Type:      "click",
+		Timestamp: time.Now(),
+	}})).Times(1).Return(nil)
 
 	err := s.rotationService.PersistClick(s.ctx, testSlotID, testGroupID, testBannerID)
 	s.Require().NoError(err)
@@ -142,9 +153,17 @@ func (s RotationSuite) TestNextBannerIDBasic() {
 	testSlotID := faker.UUIDHyphenated()
 	testGroupID := faker.UUIDHyphenated()
 
-	s.mockRepo.EXPECT().FindSlotBannerStats(s.ctx, testSlotID, testGroupID).Return(testStats, nil)
+	s.mockRepo.EXPECT().FindSlotBannerStats(s.ctx, testSlotID, testGroupID).Times(1).Return(testStats, nil)
 	s.mockRepo.EXPECT().CountTotalShowsAmount(s.ctx, testSlotID, testGroupID).MaxTimes(1).Return(testTotalShowsAmount, nil)
-	s.mockRepo.EXPECT().PersistShow(s.ctx, testSlotID, testGroupID, gomock.Any()).Return(nil)
+	s.mockRepo.EXPECT().PersistShow(s.ctx, testSlotID, testGroupID, gomock.Any()).Times(1).Return(nil)
+	// unable to determine here what banner id will be selected
+	s.mockPublisher.EXPECT().Publish(messageMatcher{stats.Message{
+		BannerID:  "any",
+		SlotID:    testSlotID,
+		GroupID:   testGroupID,
+		Type:      "show",
+		Timestamp: time.Now(),
+	}}).Times(1).Return(nil)
 
 	_, err := s.rotationService.NextBannerID(s.ctx, testSlotID, testGroupID)
 	s.Require().NoError(err)
@@ -168,6 +187,13 @@ func (s RotationSuite) TestAllBannersShownAtLeastOnce() {
 		increaseShows(testStats, resBannerId)
 		return nil
 	}).Times(100)
+	s.mockPublisher.EXPECT().Publish(messageMatcher{stats.Message{
+		BannerID:  "any",
+		SlotID:    testSlotID,
+		GroupID:   testGroupID,
+		Type:      "show",
+		Timestamp: time.Now(),
+	}}).Times(100).Return(nil)
 
 	for _, v := range testStats {
 		id, err := s.rotationService.NextBannerID(s.ctx, testSlotID, testGroupID)
@@ -208,6 +234,14 @@ func (s RotationSuite) TestMorePopularBannersShownMoreOften() {
 		return nil
 	}).Times(numOfShows)
 
+	s.mockPublisher.EXPECT().Publish(messageMatcher{stats.Message{
+		BannerID:  "any",
+		SlotID:    testSlotID,
+		GroupID:   testGroupID,
+		Type:      "show",
+		Timestamp: time.Now(),
+	}}).Times(numOfShows).Return(nil)
+
 	s.mockRepo.EXPECT().PersistClick(
 		s.ctx,
 		testSlotID,
@@ -217,6 +251,14 @@ func (s RotationSuite) TestMorePopularBannersShownMoreOften() {
 		increaseClicks(testStats, resBannerId)
 		return nil
 	}).MaxTimes(numOfShows)
+
+	s.mockPublisher.EXPECT().Publish(messageMatcher{stats.Message{
+		BannerID:  "any",
+		SlotID:    testSlotID,
+		GroupID:   testGroupID,
+		Type:      "click",
+		Timestamp: time.Now(),
+	}}).MaxTimes(numOfShows).Return(nil)
 
 	popularBannersShows := 0
 	unpopularBannersShows := 0
@@ -324,4 +366,36 @@ func isPopularBanner(stats []storage.SlotBannerStat, bannerID string) bool {
 		}
 	}
 	return false
+}
+
+type messageMatcher struct {
+	stats.Message
+}
+
+func (m messageMatcher) Matches(x interface{}) bool {
+	m2, ok := x.(stats.Message)
+	if !ok {
+		return false
+	}
+	return m2.GroupID == m.GroupID && m2.SlotID == m.SlotID && m2.Type == m.Type
+}
+
+func (m messageMatcher) String() string {
+	return fmt.Sprintf("is equal to %+v", m.Message)
+}
+
+type withBannerIDMsgMatcher struct {
+	messageMatcher
+}
+
+func (m withBannerIDMsgMatcher) Matches(x interface{}) bool {
+	m2, ok := x.(stats.Message)
+	if !ok {
+		return false
+	}
+	return m2.BannerID == m.BannerID && m2.GroupID == m.GroupID && m2.SlotID == m.SlotID && m2.Type == m.Type
+}
+
+func matchWithBannerID(m messageMatcher) withBannerIDMsgMatcher {
+	return withBannerIDMsgMatcher{m}
 }

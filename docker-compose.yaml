@@ -32,13 +32,14 @@ services:
           - net-db
 
   rabbit:
-    image: rabbitmq
+    image: rabbitmq:3.9.4-management-alpine
     hostname: rabbit
     container_name: rotation-rabbit
     ports:
       - '15672:15672'
       - '5672:5672'
     expose:
+      - 5672
       - 15672
     restart: always
     networks:
@@ -76,6 +77,8 @@ services:
       - '50051:50051'
     expose:
       - 50051
+    environment:
+      - WAIT_HOSTS=rabbit:5672
     networks:
       rotation-network:
         ipv4_address: 10.20.30.30
