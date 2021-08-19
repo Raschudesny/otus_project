@@ -23,7 +23,7 @@ services:
       POSTGRES_DB: rotation
       PGDATA: /var/lib/postgresql/data/pgdata
     volumes:
-      - /Users/d.udovichenko/psqldata:/var/lib/postgresql/data/pgdata
+      - ~/psqldata/rotation-pgdata:/var/lib/postgresql/data/pgdata
     networks:
       rotation-network:
         ipv4_address: 10.20.30.10
