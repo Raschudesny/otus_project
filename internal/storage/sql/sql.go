@@ -8,15 +8,12 @@ import (
 	"time"
 
 	"github.com/Raschudesny/otus_project/v1/internal/config"
-	"github.com/Raschudesny/otus_project/v1/internal/services"
 	"github.com/Raschudesny/otus_project/v1/internal/storage"
 	"github.com/jmoiron/sqlx"
 	sqldblogger "github.com/simukti/sqldb-logger"
 	"github.com/simukti/sqldb-logger/logadapter/zapadapter"
 	"go.uber.org/zap"
 )
-
-var _ services.Repository = (*Storage)(nil)
 
 type Storage struct {
 	db                    *sqlx.DB
@@ -289,25 +286,8 @@ func (s *Storage) PersistClick(ctx context.Context, slotID, groupID, bannerID st
 		return fmt.Errorf("error during sql rows affected checking: %w", err)
 	}
 
-	// if no rows affected by query, than this method should to init stats for current banner
 	if affected == 0 {
-		query := `INSERT INTO banner_stats (slot_id, banner_id, group_id, clicks_amount, shows_amount)
- 				  VALUES (:slotId, :bannerId, :groupId, 1, 0)`
-		res, err := s.db.NamedExecContext(ctx, query, map[string]interface{}{
-			"slotId":   slotID,
-			"bannerId": bannerID,
-			"groupId":  groupID,
-		})
-		if err != nil {
-			return fmt.Errorf("error during sql execution: %w", err)
-		}
-		rowsAffected, err := res.RowsAffected()
-		if err != nil {
-			return fmt.Errorf("error during sql rows affected checking: %w", err)
-		}
-		if rowsAffected == 0 {
-			return storage.ErrFailedStatsInit
-		}
+		return storage.ErrFailedStatsInit
 	}
 	return nil
 }

@@ -52,7 +52,6 @@ func (s RotationSuite) TestAddBanner() {
 	s.Require().NoError(err)
 
 	s.mockRepo.EXPECT().AddBanner(s.ctx, testBanner.Description).Return(testBanner.ID, nil)
-	s.mockRepo.EXPECT().GetBannerByID(s.ctx, testBanner.ID).Return(testBanner, nil)
 
 	banner, err := s.rotationService.AddBanner(s.ctx, testBanner.Description)
 	s.Require().NoError(err)
@@ -72,7 +71,6 @@ func (s RotationSuite) TestAddSlot() {
 	s.Require().NoError(err)
 
 	s.mockRepo.EXPECT().AddSlot(s.ctx, testSlot.Description).Return(testSlot.ID, nil)
-	s.mockRepo.EXPECT().GetSlotByID(s.ctx, testSlot.ID).Return(testSlot, nil)
 
 	slot, err := s.rotationService.AddSlot(s.ctx, testSlot.Description)
 	s.Require().NoError(err)
@@ -92,7 +90,6 @@ func (s RotationSuite) TestAddGroup() {
 	s.Require().NoError(err)
 
 	s.mockRepo.EXPECT().AddGroup(s.ctx, testGroup.Description).Return(testGroup.ID, nil)
-	s.mockRepo.EXPECT().GetGroupByID(s.ctx, testGroup.ID).Return(testGroup, nil)
 
 	group, err := s.rotationService.AddGroup(s.ctx, testGroup.Description)
 	s.Require().NoError(err)

@@ -7,7 +7,6 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/Raschudesny/otus_project/v1/internal/server"
 	"github.com/Raschudesny/otus_project/v1/internal/stats"
 	"github.com/Raschudesny/otus_project/v1/internal/storage"
 )
@@ -36,8 +35,6 @@ type EventsPublisher interface {
 	Publish(msg stats.Message) error
 }
 
-var _ server.Application = (*RotationService)(nil)
-
 type RotationService struct {
 	repo      Repository
 	publisher EventsPublisher
@@ -48,24 +45,17 @@ func NewRotationService(repo Repository, publisher EventsPublisher) RotationServ
 }
 
 func (r RotationService) AddSlot(ctx context.Context, description string) (storage.Slot, error) {
-	if description == "" {
-		return storage.Slot{}, fmt.Errorf("description param is empty")
-	}
 	slotID, err := r.repo.AddSlot(ctx, description)
 	if err != nil {
 		return storage.Slot{}, fmt.Errorf("error during slot creation: %w", err)
 	}
-	slot, err := r.repo.GetSlotByID(ctx, slotID)
-	if err != nil {
-		return storage.Slot{}, fmt.Errorf("error during getting slot by id: %w", err)
-	}
-	return slot, nil
+	return storage.Slot{
+		ID:          slotID,
+		Description: description,
+	}, nil
 }
 
 func (r RotationService) DeleteSlot(ctx context.Context, slotID string) error {
-	if slotID == "" {
-		return fmt.Errorf("slotID param is empty")
-	}
 	if err := r.repo.DeleteSlot(ctx, slotID); err != nil {
 		return fmt.Errorf("error during slot deleting: %w", err)
 	}
@@ -73,12 +63,6 @@ func (r RotationService) DeleteSlot(ctx context.Context, slotID string) error {
 }
 
 func (r RotationService) AddBannerToSlot(ctx context.Context, slotID, bannerID string) error {
-	if bannerID == "" {
-		return fmt.Errorf("bannerID param is empty")
-	}
-	if slotID == "" {
-		return fmt.Errorf("slotID param is empty")
-	}
 	err := r.repo.AddBannerToSlot(ctx, slotID, bannerID)
 	if err != nil {
 		return fmt.Errorf("error during adding banner to slot: %w", err)
@@ -87,12 +71,6 @@ func (r RotationService) AddBannerToSlot(ctx context.Context, slotID, bannerID s
 }
 
 func (r RotationService) DeleteBannerFromSlot(ctx context.Context, bannerID, slotID string) error {
-	if bannerID == "" {
-		return fmt.Errorf("bannerID param is empty")
-	}
-	if slotID == "" {
-		return fmt.Errorf("slotID param is empty")
-	}
 	if err := r.repo.DeleteBannerFromSlot(ctx, bannerID, slotID); err != nil {
 		return fmt.Errorf("errod during deleting banner from slot: %w", err)
 	}
@@ -100,24 +78,17 @@ func (r RotationService) DeleteBannerFromSlot(ctx context.Context, bannerID, slo
 }
 
 func (r RotationService) AddBanner(ctx context.Context, description string) (storage.Banner, error) {
-	if description == "" {
-		return storage.Banner{}, fmt.Errorf("description param is empty")
-	}
 	bannerID, err := r.repo.AddBanner(ctx, description)
 	if err != nil {
 		return storage.Banner{}, fmt.Errorf("error during creating banner: %w", err)
 	}
-	banner, err := r.repo.GetBannerByID(ctx, bannerID)
-	if err != nil {
-		return storage.Banner{}, fmt.Errorf("error during retrieving created banner: %w", err)
-	}
-	return banner, nil
+	return storage.Banner{
+		ID:          bannerID,
+		Description: description,
+	}, nil
 }
 
 func (r RotationService) DeleteBanner(ctx context.Context, bannerID string) error {
-	if bannerID == "" {
-		return fmt.Errorf("bannerID param is empty")
-	}
 	if err := r.repo.DeleteBanner(ctx, bannerID); err != nil {
 		return fmt.Errorf("error during deleting banner")
 	}
@@ -125,24 +96,17 @@ func (r RotationService) DeleteBanner(ctx context.Context, bannerID string) erro
 }
 
 func (r RotationService) AddGroup(ctx context.Context, description string) (storage.SocialGroup, error) {
-	if description == "" {
-		return storage.SocialGroup{}, fmt.Errorf("description is empty")
-	}
 	groupID, err := r.repo.AddGroup(ctx, description)
 	if err != nil {
 		return storage.SocialGroup{}, fmt.Errorf("error during adding group: %w", err)
 	}
-	group, err := r.repo.GetGroupByID(ctx, groupID)
-	if err != nil {
-		return storage.SocialGroup{}, fmt.Errorf("error during retrieving froup by id: %w", err)
-	}
-	return group, nil
+	return storage.SocialGroup{
+		ID:          groupID,
+		Description: description,
+	}, nil
 }
 
 func (r RotationService) DeleteGroup(ctx context.Context, groupID string) error {
-	if groupID == "" {
-		return fmt.Errorf("gorupID param is empty")
-	}
 	if err := r.repo.DeleteGroup(ctx, groupID); err != nil {
 		return fmt.Errorf("error during deleting group by id: %w", err)
 	}
@@ -150,16 +114,6 @@ func (r RotationService) DeleteGroup(ctx context.Context, groupID string) error 
 }
 
 func (r RotationService) PersistClick(ctx context.Context, slotID, groupID, bannerID string) error {
-	if slotID == "" {
-		return fmt.Errorf("slotId param is empty")
-	}
-	if groupID == "" {
-		return fmt.Errorf("groupId param is empty")
-	}
-	if bannerID == "" {
-		return fmt.Errorf("bannerId param is empty")
-	}
-
 	if err := r.repo.PersistClick(ctx, slotID, groupID, bannerID); err != nil {
 		return fmt.Errorf("failed to persist banner click stats: %w", err)
 	}
