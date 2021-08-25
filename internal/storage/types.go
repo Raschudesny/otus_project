@@ -11,6 +11,7 @@ var (
 	ErrGroupNotFound                = errors.New("social group not found")
 	ErrSlotToBannerRelationNotFound = errors.New("slot to banner mapping not found")
 	ErrFailedStatsInit              = errors.New("failed to init banner stats")
+	ErrBannerNotShown               = errors.New("banner still wasn't shown")
 	ErrNoBannersFoundForSlot        = errors.New("no banners found for provided slot")
 )
 

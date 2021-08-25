@@ -268,7 +268,6 @@ func (s *Storage) DeleteGroup(ctx context.Context, id string) error {
 	return nil
 }
 
-//nolint:dupl
 func (s *Storage) PersistClick(ctx context.Context, slotID, groupID, bannerID string) error {
 	query := `UPDATE banner_stats
 			  SET clicks_amount = clicks_amount + 1
@@ -287,12 +286,11 @@ func (s *Storage) PersistClick(ctx context.Context, slotID, groupID, bannerID st
 	}
 
 	if affected == 0 {
-		return storage.ErrFailedStatsInit
+		return storage.ErrBannerNotShown
 	}
 	return nil
 }
 
-//nolint:dupl
 func (s *Storage) PersistShow(ctx context.Context, slotID, groupID, bannerID string) error {
 	query := `UPDATE banner_stats 
 			  SET shows_amount = shows_amount + 1 

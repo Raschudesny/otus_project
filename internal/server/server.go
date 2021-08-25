@@ -149,10 +149,15 @@ func (r *RotationService) PersistClick(ctx context.Context, req *pb.PersistClick
 	if bannerID == "" {
 		return nil, status.Errorf(codes.InvalidArgument, "banner id is empty")
 	}
-	if err := r.app.PersistClick(ctx, slotID, groupID, bannerID); err != nil {
+	err := r.app.PersistClick(ctx, slotID, groupID, bannerID)
+	switch {
+	case errors.Is(err, storage.ErrBannerNotShown):
+		return nil, status.Errorf(codes.InvalidArgument, "this banner wasn't shown before, statistics on his clicks are not recorded")
+	case err != nil:
 		return nil, status.Errorf(codes.Internal, "failed to persist click: %s", err.Error())
+	default:
+		return &pb.PersistClickResponse{}, nil
 	}
-	return &pb.PersistClickResponse{}, nil
 }
 
 func (r *RotationService) NextBanner(ctx context.Context, req *pb.NextBannerRequest) (*pb.NextBannerResponse, error) {
