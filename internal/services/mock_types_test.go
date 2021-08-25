@@ -95,21 +95,6 @@ func (mr *MockRepositoryMockRecorder) AddSlot(arg0, arg1 interface{}) *gomock.Ca
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddSlot", reflect.TypeOf((*MockRepository)(nil).AddSlot), arg0, arg1)
 }
 
-// CountTotalShowsAmount mocks base method.
-func (m *MockRepository) CountTotalShowsAmount(arg0 context.Context, arg1, arg2 string) (int64, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CountTotalShowsAmount", arg0, arg1, arg2)
-	ret0, _ := ret[0].(int64)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// CountTotalShowsAmount indicates an expected call of CountTotalShowsAmount.
-func (mr *MockRepositoryMockRecorder) CountTotalShowsAmount(arg0, arg1, arg2 interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CountTotalShowsAmount", reflect.TypeOf((*MockRepository)(nil).CountTotalShowsAmount), arg0, arg1, arg2)
-}
-
 // DeleteBanner mocks base method.
 func (m *MockRepository) DeleteBanner(arg0 context.Context, arg1 string) error {
 	m.ctrl.T.Helper()

@@ -27,7 +27,6 @@ type Repository interface {
 	DeleteGroup(ctx context.Context, id string) error
 	PersistClick(ctx context.Context, slotID, groupID, bannerID string) error
 	PersistShow(ctx context.Context, slotID, groupID, bannerID string) error
-	CountTotalShowsAmount(ctx context.Context, slotID, groupID string) (int64, error)
 	FindSlotBannerStats(ctx context.Context, slotID, groupID string) ([]storage.SlotBannerStat, error)
 }
 
@@ -170,11 +169,8 @@ func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID strin
 			return bannerStat.BannerID, nil
 		}
 	}
-	totalBannerShows, err := r.repo.CountTotalShowsAmount(ctx, slotID, groupID)
-	if err != nil {
-		return "", fmt.Errorf("failed to get total banner shows amount: %w", err)
-	}
 
+	totalBannerShows := countTotalShowsAmount(bannerStats)
 	maxTargetValue := 0.0
 	maxBannerID := bannerStats[0].BannerID
 	for _, bannerStat := range bannerStats {
@@ -187,6 +183,14 @@ func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID strin
 	}
 
 	return maxBannerID, nil
+}
+
+func countTotalShowsAmount(stats []storage.SlotBannerStat) int64 {
+	var totalShows int64
+	for _, stat := range stats {
+		totalShows += stat.GetShows()
+	}
+	return totalShows
 }
 
 // targetFunction is a maximizing on each step in UCB1 algo function value

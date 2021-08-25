@@ -331,24 +331,6 @@ func (s *Storage) PersistShow(ctx context.Context, slotID, groupID, bannerID str
 	return nil
 }
 
-func (s *Storage) CountTotalShowsAmount(ctx context.Context, slotID, groupID string) (int64, error) {
-	query := "SELECT SUM(shows_amount) FROM banner_stats WHERE slot_id = $1 AND group_id = $2;"
-	row := s.db.QueryRowxContext(ctx, query, slotID, groupID)
-
-	// possible null value from base if there is no stats for shows in this slot
-	var amount sql.NullInt64
-	err := row.Scan(&amount)
-	switch {
-	case err != nil:
-		return 0, fmt.Errorf("sql GetBannerById result scan error: %w", err)
-	default:
-		if !amount.Valid {
-			return 0, nil
-		}
-		return amount.Int64, nil
-	}
-}
-
 func (s *Storage) FindSlotBannerStats(ctx context.Context, slotID, groupID string) ([]storage.SlotBannerStat, error) {
 	query := `SELECT sb.banner_id, clicks_amount, shows_amount
 			  FROM (select slot_id, banner_id

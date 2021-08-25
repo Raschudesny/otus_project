@@ -145,13 +145,11 @@ func (s RotationSuite) TestPersistClick() {
 // TestNextBannerIDBasic - test purpose is just to check that NextBannerID correctly works with a storage.
 func (s RotationSuite) TestNextBannerIDBasic() {
 	testStats := fakeStatsSlice()
-	testTotalShowsAmount := countTotalShowsAmount(testStats)
 
 	testSlotID := faker.UUIDHyphenated()
 	testGroupID := faker.UUIDHyphenated()
 
 	s.mockRepo.EXPECT().FindSlotBannerStats(s.ctx, testSlotID, testGroupID).Times(1).Return(testStats, nil)
-	s.mockRepo.EXPECT().CountTotalShowsAmount(s.ctx, testSlotID, testGroupID).MaxTimes(1).Return(testTotalShowsAmount, nil)
 	s.mockRepo.EXPECT().PersistShow(s.ctx, testSlotID, testGroupID, gomock.Any()).Times(1).Return(nil)
 	// unable to determine here what banner id will be selected
 	s.mockPublisher.EXPECT().Publish(messageMatcher{stats.Message{
@@ -174,7 +172,6 @@ func (s RotationSuite) TestAllBannersShownAtLeastOnce() {
 	testGroupID := faker.UUIDHyphenated()
 
 	s.mockRepo.EXPECT().FindSlotBannerStats(s.ctx, testSlotID, testGroupID).Times(100).Return(testStats, nil)
-	s.mockRepo.EXPECT().CountTotalShowsAmount(s.ctx, testSlotID, testGroupID).Times(0).Return(int64(-1), nil)
 	s.mockRepo.EXPECT().PersistShow(
 		s.ctx,
 		testSlotID,
@@ -214,13 +211,6 @@ func (s RotationSuite) TestMorePopularBannersShownMoreOften() {
 		testSlotID,
 		testGroupID,
 	).Times(numOfShows).Return(testStats, nil)
-	s.mockRepo.EXPECT().CountTotalShowsAmount(
-		s.ctx,
-		testSlotID,
-		testGroupID,
-	).Times(numOfShows - numOfBanners).DoAndReturn(func(_ context.Context, _, _ string) (int64, error) {
-		return countTotalShowsAmount(testStats), nil
-	})
 	s.mockRepo.EXPECT().PersistShow(
 		s.ctx,
 		testSlotID,
@@ -293,14 +283,6 @@ func fakeGroup() (storage.SocialGroup, error) {
 	var group storage.SocialGroup
 	err := faker.FakeData(&group)
 	return group, err
-}
-
-func countTotalShowsAmount(stats []storage.SlotBannerStat) int64 {
-	var sum int64
-	for _, v := range stats {
-		sum += v.GetShows()
-	}
-	return sum
 }
 
 func increaseShows(stats []storage.SlotBannerStat, bannerID string) {
