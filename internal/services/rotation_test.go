@@ -166,7 +166,7 @@ func (s RotationSuite) TestNextBannerIDBasic() {
 
 // TestNextBannerIdAllShownAtLeastOnce - test purpose is to check all banners should be shown at least once.
 func (s RotationSuite) TestAllBannersShownAtLeastOnce() {
-	testStats := fakeStatsSliceWithAllNotShown(100)
+	testStats := fakeStatsSliceWithEmptyStats(100)
 
 	testSlotID := faker.UUIDHyphenated()
 	testGroupID := faker.UUIDHyphenated()
@@ -201,7 +201,7 @@ func (s RotationSuite) TestMorePopularBannersShownMoreOften() {
 	numOfBanners := 100
 	// lets imagine that first 10 banners is a most popular one
 	numOfPopularBanners := 10
-	testStats := fakeStatsSliceWithAllNotShown(numOfBanners)
+	testStats := fakeStatsSliceWithEmptyStats(numOfBanners)
 
 	testSlotID := faker.UUIDHyphenated()
 	testGroupID := faker.UUIDHyphenated()
@@ -322,7 +322,7 @@ func fakeStatsSlice() []storage.SlotBannerStat {
 	return res
 }
 
-func fakeStatsSliceWithAllNotShown(numOfBanners int) []storage.SlotBannerStat {
+func fakeStatsSliceWithEmptyStats(numOfBanners int) []storage.SlotBannerStat {
 	res := make([]storage.SlotBannerStat, 0, numOfBanners)
 	for i := 0; i < numOfBanners; i++ {
 		res = append(res, storage.SlotBannerStat{

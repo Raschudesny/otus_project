@@ -56,6 +56,9 @@ services:
     container_name: rotation-migrations-init
     depends_on:
       - postgres
+      - rabbit
+    environment:
+      - WAIT_HOSTS=postgres:5432, rabbit:5672
     networks:
       rotation-network:
         aliases:
@@ -78,7 +81,7 @@ services:
     expose:
       - 50051
     environment:
-      - WAIT_HOSTS=rabbit:5672
+      - WAIT_HOSTS=postgres:5432, rabbit:5672
     networks:
       rotation-network:
         ipv4_address: 10.20.30.30

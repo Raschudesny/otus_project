@@ -133,28 +133,7 @@ func (r RotationService) PersistClick(ctx context.Context, slotID, groupID, bann
 // Al the theory behind the scenes can be found in paper below:
 // DOI:10.1023/A:1013689704352, Authors: Auer et al., 2002.
 // Original link: https://link.springer.com/content/pdf/10.1023/A:1013689704352.pdf.
-func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID string) (res string, err error) {
-	// saving selected banner id show in db and publish stats to queue
-	// maybe a little bit overcomplicated code here ...
-	defer func() {
-		if err == nil {
-			if persistErr := r.repo.PersistShow(ctx, slotID, groupID, res); persistErr != nil {
-				res, err = "", fmt.Errorf("failed to store banner show: %w", persistErr)
-			}
-		}
-		if err == nil {
-			if publishErr := r.publisher.Publish(stats.Message{
-				BannerID:  res,
-				SlotID:    slotID,
-				GroupID:   groupID,
-				Type:      "show",
-				Timestamp: time.Now(),
-			}); publishErr != nil {
-				res, err = "", fmt.Errorf("failed to publish click event stats to rabbit queue: %w", err)
-			}
-		}
-	}()
-
+func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID string) (string, error) {
 	bannerStats, err := r.repo.FindSlotBannerStats(ctx, slotID, groupID)
 	if err != nil {
 		return "", fmt.Errorf("failed to get banner statistics for a slot: %w", err)
@@ -163,13 +142,33 @@ func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID strin
 		return "", storage.ErrNoBannersFoundForSlot
 	}
 
-	// UCB1 algo implementation below
+	maxBannerID := calculateNextBannerID(bannerStats)
+	if err := r.repo.PersistShow(ctx, slotID, groupID, maxBannerID); err != nil {
+		return "", fmt.Errorf("failed to store banner show: %w", err)
+	}
+	if err := r.publisher.Publish(stats.Message{
+		BannerID:  maxBannerID,
+		SlotID:    slotID,
+		GroupID:   groupID,
+		Type:      "show",
+		Timestamp: time.Now(),
+	}); err != nil {
+		return "", fmt.Errorf("failed to publish click event stats to rabbit queue: %w", err)
+	}
+
+	return maxBannerID, nil
+}
+
+// calculateNextBannerId - evaluates (using UCB1 algo) next banner id using banner shows and clicks stats.
+func calculateNextBannerID(bannerStats []storage.SlotBannerStat) string {
+	// all available banners should be shown at least once
 	for _, bannerStat := range bannerStats {
 		if bannerStat.GetShows() == 0 {
-			return bannerStat.BannerID, nil
+			return bannerStat.BannerID
 		}
 	}
 
+	// show banner which has max targetFunction value
 	totalBannerShows := countTotalShowsAmount(bannerStats)
 	maxTargetValue := 0.0
 	maxBannerID := bannerStats[0].BannerID
@@ -181,8 +180,7 @@ func (r RotationService) NextBannerID(ctx context.Context, slotID, groupID strin
 			maxBannerID = bannerStat.BannerID
 		}
 	}
-
-	return maxBannerID, nil
+	return maxBannerID
 }
 
 func countTotalShowsAmount(stats []storage.SlotBannerStat) int64 {
