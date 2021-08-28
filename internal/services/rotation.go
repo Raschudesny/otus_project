@@ -89,7 +89,7 @@ func (r RotationService) AddBanner(ctx context.Context, description string) (sto
 
 func (r RotationService) DeleteBanner(ctx context.Context, bannerID string) error {
 	if err := r.repo.DeleteBanner(ctx, bannerID); err != nil {
-		return fmt.Errorf("error during deleting banner")
+		return fmt.Errorf("error during deleting banner: %w", err)
 	}
 	return nil
 }
